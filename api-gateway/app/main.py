@@ -16,6 +16,7 @@ from app.router import (
     community_router,
     env_router,
     footprint_router,
+    image_router,
     narrative_router,
     profile_router,
 )
@@ -47,6 +48,7 @@ app.include_router(env_router, prefix=API_PREFIX)
 app.include_router(narrative_router, prefix=API_PREFIX)
 app.include_router(actions_router, prefix=API_PREFIX)
 app.include_router(community_router, prefix=API_PREFIX)
+app.include_router(image_router, prefix=API_PREFIX)
 
 
 @app.get("/health")

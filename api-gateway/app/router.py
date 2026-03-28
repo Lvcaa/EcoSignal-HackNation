@@ -354,9 +354,33 @@ async def join_challenge(
     )
 
 
+# ── Image Router ──────────────────────────────────────────
+
+image_router = APIRouter(prefix="/image", tags=["image"])
+
+
+@image_router.post(
+    "/analyze",
+    responses={401: {"model": ErrorResponse}, 422: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+)
+@limiter.limit("20/minute")
+async def analyze_image(
+    request: Request,
+    body: dict[str, Any],
+    token: TokenPayload = Depends(verify_token),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    return await _proxy(
+        "POST",
+        f"{settings.image_analyzer_service_url}/api/v1/analyze",
+        json={**body, "user_id": token.sub},
+        headers=_auth_headers(request),
+    )
+
+
 # Fix: @limiter.limit wrappers have __globals__ from slowapi, not this module.
 # With `from __future__ import annotations`, string annotations can't resolve
 # types like RegisterRequest in slowapi's namespace. Inject them explicitly.
 _module_types = {k: v for k, v in globals().items() if not k.startswith("_")}
-for _fn in (register, login, get_narrative):
+for _fn in (register, login, get_narrative, analyze_image):
     _fn.__globals__.update(_module_types)

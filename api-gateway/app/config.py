@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     ai_narrative_service_url: str = "http://ai-narrative:8000"
     actions_service_url: str = "http://actions-engine:8000"
     community_service_url: str = "http://community:8000"
+    image_analyzer_service_url: str = "http://image-analyzer:8000"
 
     redis_url: str = "redis://redis:6379/0"
     log_level: str = "INFO"
