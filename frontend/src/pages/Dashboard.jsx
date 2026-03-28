@@ -1,9 +1,9 @@
 import CircularProgress from '../components/ui/CircularProgress'
 import AirAlertBanner from '../components/ui/AirAlertBanner'
 import NarrativeCard from '../components/ui/NarrativeCard'
-import ActionCard from '../components/ui/ActionCard'
+import ActionTimeline from '../components/ui/ActionTimeline'
 import { useNavigate } from 'react-router-dom'
-import { useFootprint, useAirQuality, useNarrative, useActions, useCompleteAction, useLatestSurvey } from '../hooks/useDashboard'
+import { useFootprint, useAirQuality, useNarrative, useWeeklySummary, useLatestSurvey, useTodayActions } from '../hooks/useDashboard'
 
 function getWeekStart() {
   const now = new Date()
@@ -14,59 +14,73 @@ function getWeekStart() {
   return monday.toISOString().slice(0, 10)
 }
 
+const quickActions = [
+  { icon: 'restaurant', label: 'Pasto', to: '/actions/meal' },
+  { icon: 'directions_car', label: 'Viaggio', to: '/actions/trip' },
+  { icon: 'shopping_cart', label: 'Spesa', to: '/actions/grocery' },
+  { icon: 'checkroom', label: 'Vestiti', to: '/actions/clothing' },
+]
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const footprint = useFootprint()
   const airQuality = useAirQuality()
   const narrative = useNarrative()
-  const actions = useActions()
-  const completeAction = useCompleteAction()
+  const weeklySummary = useWeeklySummary()
   const latestSurvey = useLatestSurvey()
+  const todayActions = useTodayActions()
 
   const surveyThisWeek = latestSurvey.data?.week_start === getWeekStart()
 
   const fp = footprint.data
-  const totalKg = fp?.total_kg_co2 ?? 0
-  const pctVsAvg = fp?.vs_national_avg_pct ?? 0
-  const ringValue = Math.min(100, Math.max(0, ((100 + pctVsAvg) / 200) * 100))
+  const baselineKg = fp?.total_kg_co2 ?? 0
+  const currentWeekKg = weeklySummary.data?.total_co2_kg ?? 0
+
+  // Comparison logic
+  const deltaPct = baselineKg > 0
+    ? ((currentWeekKg - baselineKg) / baselineKg) * 100
+    : 0
+  const isBelow = deltaPct <= 0
+  const ringColor = deltaPct <= 0 ? 'green' : deltaPct <= 20 ? 'orange' : 'red'
+
+  // Ring values: baseline as outer, current as inner (both normalized to 0-100)
+  const maxKg = Math.max(baselineKg, currentWeekKg, 1)
+  const currentRingValue = (currentWeekKg / maxKg) * 100
+  const baselineRingValue = (baselineKg / maxKg) * 100
 
   return (
     <div className="pb-4">
       {/* Air Alert */}
       <AirAlertBanner data={airQuality.data} />
 
-      {/* Weekly Footprint */}
+      {/* CO2 Comparison Card */}
       <section className="px-4 mt-6">
         <p className="text-[10px] font-bold text-on-surface/40 uppercase tracking-[0.2em] text-center mb-4">
-          Weekly Footprint
+          Il tuo impatto
         </p>
 
         {footprint.isLoading ? (
           <div className="flex justify-center"><div className="skeleton w-48 h-48 rounded-full" /></div>
         ) : (
           <div className="flex flex-col items-center">
-            <CircularProgress value={ringValue} size={192}>
-              <span className="text-4xl font-black text-on-surface">{totalKg.toFixed(0)}</span>
+            <CircularProgress
+              value={currentRingValue}
+              baselineValue={baselineRingValue}
+              size={192}
+              colorClass={ringColor}
+            >
+              <span className="text-4xl font-black text-on-surface">{currentWeekKg.toFixed(1)}</span>
               <span className="text-xs text-on-surface/50 -mt-1">kg CO₂</span>
             </CircularProgress>
 
-            <p className="mt-3 text-sm font-medium text-on-surface/70">
-              {pctVsAvg < 0 ? `${pctVsAvg}%` : `+${pctVsAvg}%`} vs last week{' '}
-              {pctVsAvg <= 0 && <span className="text-primary">🌿</span>}
-            </p>
-
-            <div className="flex gap-2 mt-3">
-              {['Transport', 'Food', 'Home'].map((cat) => (
-                <span
-                  key={cat}
-                  className="text-[11px] font-medium px-3 py-1 rounded-full bg-surface-container-high text-on-surface/60 flex items-center gap-1"
-                >
-                  <span className="material-symbols-outlined text-xs">
-                    {cat === 'Transport' ? 'directions_bus' : cat === 'Food' ? 'restaurant' : 'home'}
-                  </span>
-                  {cat}
-                </span>
-              ))}
+            <div className="mt-3 text-center">
+              <p className="text-sm font-medium text-on-surface/70">
+                Baseline: {baselineKg.toFixed(1)} kg/settimana
+              </p>
+              <p className={`text-sm font-bold mt-1 ${isBelow ? 'text-primary' : ringColor === 'red' ? 'text-red-600' : 'text-amber-600'}`}>
+                {isBelow ? '' : '+'}{deltaPct.toFixed(0)}% rispetto alla tua baseline
+                {isBelow && ' 🌿'}
+              </p>
             </div>
           </div>
         )}
@@ -75,7 +89,33 @@ export default function Dashboard() {
       {/* AI Narrative */}
       <NarrativeCard data={narrative.data} isLoading={narrative.isLoading} />
 
-      {/* Weekly Survey */}
+      {/* Today's Actions Timeline */}
+      <section className="px-4 mt-6">
+        <h3 className="text-base font-bold text-on-surface mb-3">Le azioni di oggi</h3>
+        <div className="bg-surface-container-lowest rounded-2xl shadow-card p-4">
+          <ActionTimeline actions={todayActions.data} isLoading={todayActions.isLoading} />
+        </div>
+      </section>
+
+      {/* Quick Action Buttons */}
+      <section className="px-4 mt-6">
+        <div className="flex justify-around">
+          {quickActions.map((qa) => (
+            <button
+              key={qa.to}
+              onClick={() => navigate(qa.to)}
+              className="flex flex-col items-center gap-1.5"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-primary-fixed/30 flex items-center justify-center active:scale-95 transition-transform">
+                <span className="material-symbols-outlined text-primary text-2xl">{qa.icon}</span>
+              </div>
+              <span className="text-[11px] font-medium text-on-surface/60">{qa.label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Weekly Survey Prompt */}
       <section className="px-4 mt-6">
         {surveyThisWeek && latestSurvey.data ? (
           <div
@@ -88,7 +128,7 @@ export default function Dashboard() {
                 <span className="text-sm font-bold text-on-surface">Elettrodomestici</span>
               </div>
               <span className="text-sm font-bold text-on-surface">
-                {latestSurvey.data.co2_breakdown.total_kg.toFixed(1)} kg CO&#x2082;
+                {latestSurvey.data.co2_breakdown.total_kg.toFixed(1)} kg CO₂
               </span>
             </div>
             <p className="text-xs text-on-surface/50 mt-1 ml-8">Questionario compilato questa settimana</p>
@@ -106,35 +146,6 @@ export default function Dashboard() {
               </div>
             </div>
           </button>
-        )}
-      </section>
-
-      {/* Actions */}
-      <section className="px-4 mt-6">
-        <h3 className="text-lg font-bold text-on-surface mb-3">Your next steps</h3>
-
-        {actions.isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => <div key={i} className="skeleton h-20 w-full" />)}
-          </div>
-        ) : actions.error ? (
-          <div className="p-4 rounded-2xl bg-red-50 border border-red-200">
-            <p className="text-sm text-red-600">Dati temporaneamente non disponibili</p>
-            <button onClick={() => actions.refetch()} className="text-xs text-red-500 mt-1 font-medium">
-              Riprova
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {(actions.data?.actions || actions.data || []).slice(0, 3).map((action) => (
-              <ActionCard
-                key={action.action_id}
-                action={action}
-                onComplete={(id) => completeAction.mutate(id)}
-                completing={completeAction.isPending}
-              />
-            ))}
-          </div>
         )}
       </section>
     </div>

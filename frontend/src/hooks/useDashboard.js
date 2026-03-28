@@ -3,6 +3,7 @@ import { calculateFootprint, getHistory } from '../api/footprint'
 import { getAirQuality } from '../api/envData'
 import { getNarrative } from '../api/narrative'
 import { getActions, completeAction, logAction, getDailyActions, getWeeklySummary, submitWeeklySurvey, getLatestSurvey } from '../api/actions'
+import { getProfile } from '../api/profile'
 
 export function useFootprint() {
   return useQuery({
@@ -94,4 +95,17 @@ export function useSubmitSurvey() {
       qc.invalidateQueries({ queryKey: ['footprint'] })
     },
   })
+}
+
+export function useProfile() {
+  return useQuery({
+    queryKey: ['profile'],
+    queryFn: () => getProfile().then((r) => r.data),
+    staleTime: 120_000,
+  })
+}
+
+export function useTodayActions() {
+  const today = new Date().toISOString().slice(0, 10)
+  return useDailyActions(today)
 }
