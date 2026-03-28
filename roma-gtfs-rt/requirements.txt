@@ -1,0 +1,16 @@
+# GTFS-RT (protobuf) + download feed
+#
+# Ubuntu/Debian (PEP 668 "externally-managed-environment") — scegline UNA:
+#
+# A) Consigliato: venv (serve il pacchetto python3-venv)
+#    sudo apt install -y python3-venv
+#    cd /percorso/roma-gtfs-rt && python3 -m venv .venv
+#    .venv/bin/pip install -r requirements.txt
+#    .venv/bin/python forward_positions.py --dry-run --once --max-vehicles 3
+#
+# B) Senza venv: installazione utente con flag esplicito
+#    python3 -m pip install --user --break-system-packages -r requirements.txt
+#
+requests>=2.28.0
+gtfs-realtime-bindings>=1.0.0
+protobuf>=4.0.0
