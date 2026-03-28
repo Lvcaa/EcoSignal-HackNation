@@ -31,6 +31,13 @@ class HomeType(StrEnum):
     house = "house"
 
 
+class PetType(StrEnum):
+    dog = "dog"
+    cat = "cat"
+    small_animal = "small_animal"
+    none = "none"
+
+
 # ── Auth schemas ──────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
@@ -63,6 +70,10 @@ class ProfileUpdateRequest(BaseModel):
     diet_type: DietType | None = None
     home_type: HomeType | None = None
     home_size_sqm: int | None = Field(None, gt=0, le=1000)
+    commute_days_per_week: int | None = Field(None, ge=0, le=7)
+    has_pets: bool | None = None
+    pet_type: PetType | None = None
+    pet_count: int | None = Field(None, ge=0, le=10)
 
     @model_validator(mode="after")
     def at_least_one_field(self) -> Self:
@@ -74,6 +85,10 @@ class ProfileUpdateRequest(BaseModel):
                 self.diet_type,
                 self.home_type,
                 self.home_size_sqm,
+                self.commute_days_per_week,
+                self.has_pets,
+                self.pet_type,
+                self.pet_count,
             ]
         ):
             msg = "At least one field must be provided"
@@ -92,6 +107,10 @@ class UserProfileResponse(BaseModel):
     diet_type: DietType | None = None
     home_type: HomeType | None = None
     home_size_sqm: int | None = None
+    commute_days_per_week: int | None = None
+    has_pets: bool | None = None
+    pet_type: PetType | None = None
+    pet_count: int | None = None
     onboarding_complete: bool
     created_at: datetime
     updated_at: datetime
