@@ -49,9 +49,18 @@ docker compose exec van_management alembic upgrade head
 ```
 
 The API will be available at `http://localhost:8000`.
+The current public ngrok endpoint is
+`https://dayana-nonfulminating-novella.ngrok-free.dev`.
+When calling the public ngrok URL from scripts or API clients, include
+`ngrok-skip-browser-warning: true`.
 Swagger docs at `http://localhost:8000/docs`.
+Public Swagger docs at
+`https://dayana-nonfulminating-novella.ngrok-free.dev/docs`.
 PostgreSQL stays internal to Docker Compose by default, which avoids conflicts
 with any local Postgres already using port `5432`.
+
+Full endpoint-by-endpoint integration docs are available in
+`API_REFERENCE.md`.
 
 ### Run migrations inside Docker
 
@@ -125,7 +134,8 @@ pytest -v
 ### `GET /health`
 
 ```bash
-curl http://localhost:8000/health
+curl https://dayana-nonfulminating-novella.ngrok-free.dev/health \
+  -H "ngrok-skip-browser-warning: true"
 ```
 
 Response:
@@ -140,7 +150,8 @@ Response:
 ### `GET /version`
 
 ```bash
-curl http://localhost:8000/version
+curl https://dayana-nonfulminating-novella.ngrok-free.dev/version \
+  -H "ngrok-skip-browser-warning: true"
 ```
 
 Response:
@@ -160,7 +171,8 @@ Response:
 Submit a truck state update. Every call creates a new versioned row.
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/trucks/update \
+curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/trucks/update \
+  -H "ngrok-skip-browser-warning: true" \
   -H "Content-Type: application/json" \
   -d '{
     "truck_id": "TRUCK_001",
@@ -214,12 +226,23 @@ curl -X POST http://localhost:8000/api/v1/trucks/update \
 }
 ```
 
+### `GET /api/v1/trucks/{truck_id}/latest`
+
+Retrieve the latest known state for a truck. This is the recommended endpoint
+for clients that poll frequently.
+
+```bash
+curl https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/trucks/TRUCK_001/latest \
+  -H "ngrok-skip-browser-warning: true"
+```
+
 ### `GET /api/v1/trucks/{truck_id}/history`
 
 Retrieve full version history for a truck, newest first.
 
 ```bash
-curl "http://localhost:8000/api/v1/trucks/TRUCK_001/history?page=1&page_size=50"
+curl "https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/trucks/TRUCK_001/history?page=1&page_size=50" \
+  -H "ngrok-skip-browser-warning: true"
 ```
 
 **Query parameters:**
