@@ -1,0 +1,222 @@
+# EcoSignal — Docker Compose (full stack)
+# Usage: cp .env.example .env && make up
+
+services:
+  # ── Infrastructure ──────────────────────────────────────────────
+
+  postgres:
+    image: postgres:16
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecosignal"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecosignal-net
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ecosignal-net
+
+  # ── Application services ────────────────────────────────────────
+
+  user-profile:
+    build:
+      context: ./user-profile
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - ecosignal-net
+
+  footprint-engine:
+    build:
+      context: ./footprint-engine
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8002/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - ecosignal-net
+
+  env-data:
+    build:
+      context: ./env-data
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8003/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - ecosignal-net
+
+  ai-narrative:
+    build:
+      context: ./ai-narrative
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      user-profile:
+        condition: service_healthy
+      footprint-engine:
+        condition: service_healthy
+      env-data:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8004/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - ecosignal-net
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      USER_PROFILE_SERVICE_URL: http://user-profile:8001
+      FOOTPRINT_SERVICE_URL: http://footprint-engine:8002
+      ENV_DATA_SERVICE_URL: http://env-data:8003
+      AI_NARRATIVE_SERVICE_URL: http://ai-narrative:8004
+    depends_on:
+      user-profile:
+        condition: service_healthy
+      footprint-engine:
+        condition: service_healthy
+      env-data:
+        condition: service_healthy
+      ai-narrative:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - ecosignal-net
+
+  # ── Future services (uncomment when implemented) ────────────────
+
+  # actions-engine:
+  #   build:
+  #     context: ./actions-engine
+  #     dockerfile: Dockerfile
+  #   env_file: .env
+  #   environment:
+  #     LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:8005/health || exit 1"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 15s
+  #   networks:
+  #     - ecosignal-net
+
+  # community:
+  #   build:
+  #     context: ./community
+  #     dockerfile: Dockerfile
+  #   env_file: .env
+  #   environment:
+  #     LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:8006/health || exit 1"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 15s
+  #   networks:
+  #     - ecosignal-net
+
+  # scheduler:
+  #   build:
+  #     context: ./scheduler
+  #     dockerfile: Dockerfile
+  #   env_file: .env
+  #   environment:
+  #     LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:8007/health || exit 1"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 15s
+  #   networks:
+  #     - ecosignal-net
+
+volumes:
+  postgres_data:
+
+networks:
+  ecosignal-net:
+    driver: bridge
