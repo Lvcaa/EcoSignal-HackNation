@@ -10,6 +10,11 @@ import DietStep from './pages/onboarding/DietStep'
 import HomeStep from './pages/onboarding/HomeStep'
 import PetStep from './pages/onboarding/PetStep'
 import Dashboard from './pages/Dashboard'
+import ActionHub from './pages/ActionHub'
+import LogMeal from './pages/LogMeal'
+import LogTrip from './pages/LogTrip'
+import LogGrocery from './pages/LogGrocery'
+import LogClothing from './pages/LogClothing'
 import Community from './pages/Community'
 import Progress from './pages/Progress'
 import Profile from './pages/Profile'
@@ -55,6 +60,46 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AppLayout><Dashboard /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/actions"
+        element={
+          <ProtectedRoute>
+            <AppLayout><ActionHub /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/actions/meal"
+        element={
+          <ProtectedRoute>
+            <AppLayout><LogMeal /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/actions/trip"
+        element={
+          <ProtectedRoute>
+            <AppLayout><LogTrip /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/actions/grocery"
+        element={
+          <ProtectedRoute>
+            <AppLayout><LogGrocery /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/actions/clothing"
+        element={
+          <ProtectedRoute>
+            <AppLayout><LogClothing /></AppLayout>
           </ProtectedRoute>
         }
       />

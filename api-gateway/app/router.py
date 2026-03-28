@@ -298,6 +298,59 @@ async def get_actions(
 
 
 @actions_router.post(
+    "/log",
+    responses={401: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+)
+async def log_action(
+    request: Request,
+    body: dict[str, Any],
+    token: TokenPayload = Depends(verify_token),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    return await _proxy(
+        "POST",
+        f"{settings.actions_service_url}/api/v1/actions/log",
+        json={**body, "user_id": token.sub},
+        headers=_auth_headers(request),
+    )
+
+
+@actions_router.get(
+    "/daily",
+    responses={401: {"model": ErrorResponse}},
+)
+async def get_daily_actions(
+    request: Request,
+    date: str = Query(...),
+    token: TokenPayload = Depends(verify_token),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    return await _proxy(
+        "GET",
+        f"{settings.actions_service_url}/api/v1/actions/daily",
+        params={"user_id": token.sub, "date": date},
+        headers=_auth_headers(request),
+    )
+
+
+@actions_router.get(
+    "/weekly",
+    responses={401: {"model": ErrorResponse}},
+)
+async def get_weekly_summary(
+    request: Request,
+    token: TokenPayload = Depends(verify_token),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    return await _proxy(
+        "GET",
+        f"{settings.actions_service_url}/api/v1/actions/weekly",
+        params={"user_id": token.sub},
+        headers=_auth_headers(request),
+    )
+
+
+@actions_router.post(
     "/{action_id}/complete",
     responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
