@@ -21,3 +21,10 @@ class DietType(StrEnum):
 class HomeType(StrEnum):
     apartment = "apartment"
     house = "house"
+
+
+class PetType(StrEnum):
+    dog = "dog"
+    cat = "cat"
+    small_animal = "small_animal"
+    none = "none"

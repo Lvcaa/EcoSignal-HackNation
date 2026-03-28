@@ -4,7 +4,7 @@ All values are in kg CO₂-equivalent unless otherwise noted.
 Sources are cited inline on every constant.
 """
 
-from app.enums import DietType, HomeType, TransportMode
+from app.enums import DietType, HomeType, PetType, TransportMode
 
 # ── Transport (kg CO₂e per passenger-km) ────────────────────────
 
@@ -94,6 +94,19 @@ NATIONAL_AVG_TOTAL_KG_WEEK: float = (
 
 # ── Label thresholds (ratio of total vs national average) ───────
 # Used in service.py to assign a human-readable label.
+
+# ── Pets (kg CO₂e per animal per week) ─────────────────────────
+# Lifecycle emissions from pet food production, waste, and care.
+# Source: Gregory Okin, UCLA 2017 — "Environmental impacts of food
+# consumption by dogs and cats" (PLOS ONE 12(8): e0181301)
+
+EMISSION_FACTOR_PET_WEEKLY: dict[PetType, float] = {
+    PetType.dog: 4.2,
+    PetType.cat: 2.1,
+    PetType.small_animal: 0.5,
+    PetType.none: 0.0,
+}
+
 
 LABEL_THRESHOLD_LOW: float = 0.60
 LABEL_THRESHOLD_AVERAGE: float = 1.10

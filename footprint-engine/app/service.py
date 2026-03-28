@@ -9,6 +9,7 @@ from app.factors import (
     EMISSION_FACTOR_CAR_KM,
     EMISSION_FACTOR_DIET,
     EMISSION_FACTOR_HOME,
+    EMISSION_FACTOR_PET_WEEKLY,
     EMISSION_FACTOR_TRANSIT_KM,
     EMISSION_FACTOR_WALK_KM,
     LABEL_THRESHOLD_AVERAGE,
@@ -32,8 +33,10 @@ def calculate_footprint(request: FootprintRequest) -> FootprintResult:
     if request.week_start.weekday() != 0:
         raise ValueError("week_start must be a Monday")
 
-    # 2. Transport
+    # 2. Transport (scaled by commute days)
     km = ASSUMED_WEEKLY_KM[request.transport_mode]
+    commute_scale = request.commute_days_per_week / 5.0
+    km = km * commute_scale
     if request.transport_mode == TransportMode.mixed:
         factor = 0.5 * EMISSION_FACTOR_CAR_KM + 0.5 * EMISSION_FACTOR_TRANSIT_KM
     else:
@@ -46,15 +49,21 @@ def calculate_footprint(request: FootprintRequest) -> FootprintResult:
     # 4. Home
     home_kg = round(request.home_size_sqm * EMISSION_FACTOR_HOME[request.home_type], 2)
 
-    # 5. Total
-    total = round(transport_kg + food_kg + home_kg, 2)
+    # 5. Pets
+    if request.pet_type is not None and request.pet_count > 0:
+        pets_kg = round(request.pet_count * EMISSION_FACTOR_PET_WEEKLY[request.pet_type], 2)
+    else:
+        pets_kg = 0.0
 
-    # 6. vs national average
+    # 6. Total
+    total = round(transport_kg + food_kg + home_kg + pets_kg, 2)
+
+    # 7. vs national average
     pct = round(
         (total - NATIONAL_AVG_TOTAL_KG_WEEK) / NATIONAL_AVG_TOTAL_KG_WEEK, 4
     )
 
-    # 7. Label
+    # 8. Label
     ratio = total / NATIONAL_AVG_TOTAL_KG_WEEK
     if ratio < LABEL_THRESHOLD_LOW:
         label = "low"
@@ -65,7 +74,7 @@ def calculate_footprint(request: FootprintRequest) -> FootprintResult:
     else:
         label = "very_high"
 
-    # 8. Result
+    # 9. Result
     return FootprintResult(
         user_id=request.user_id,
         week_start=request.week_start,
@@ -74,6 +83,7 @@ def calculate_footprint(request: FootprintRequest) -> FootprintResult:
             transport_kg=transport_kg,
             food_kg=food_kg,
             home_kg=home_kg,
+            pets_kg=pets_kg,
         ),
         vs_national_avg_pct=pct,
         label=label,

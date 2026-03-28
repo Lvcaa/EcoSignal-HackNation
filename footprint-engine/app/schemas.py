@@ -8,7 +8,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from app.enums import DietType, HomeType, TransportMode
+from app.enums import DietType, HomeType, PetType, TransportMode
 
 
 def _most_recent_monday() -> date:
@@ -28,6 +28,9 @@ class FootprintRequest(BaseModel):
     diet_type: DietType
     home_type: HomeType
     home_size_sqm: int = Field(..., ge=10, le=1000)
+    commute_days_per_week: int = Field(default=5, ge=0, le=7)
+    pet_type: PetType | None = None
+    pet_count: int = Field(default=0, ge=0, le=10)
     week_start: date = Field(default_factory=_most_recent_monday)
 
 
@@ -42,6 +45,7 @@ class CategoryBreakdown(BaseModel):
     transport_kg: float = Field(..., description="kg CO₂e from transport")
     food_kg: float = Field(..., description="kg CO₂e from diet")
     home_kg: float = Field(..., description="kg CO₂e from home energy")
+    pets_kg: float = Field(0.0, description="kg CO₂e from pets")
 
 
 class FootprintResult(BaseModel):
