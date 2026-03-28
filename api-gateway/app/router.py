@@ -16,12 +16,19 @@ async def _proxy(
     url: str,
     json: Any | None = None,
     params: dict[str, Any] | None = None,
+    headers: dict[str, str] | None = None,
 ) -> Any:
     async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.request(method, url, json=json, params=params)
+        response = await client.request(method, url, json=json, params=params, headers=headers)
     if response.status_code >= 400:
         raise HTTPException(status_code=response.status_code, detail=response.json().get("detail", "Downstream error"))
     return response.json()
+
+
+def _auth_headers(request: Request) -> dict[str, str]:
+    """Extract Authorization header from incoming request for forwarding."""
+    auth = request.headers.get("authorization")
+    return {"Authorization": auth} if auth else {}
 
 
 # ── Auth Router ────────────────────────────────────────────
@@ -94,6 +101,7 @@ profile_router = APIRouter(prefix="/profile", tags=["profile"])
     },
 )
 async def submit_onboarding(
+    request: Request,
     body: dict[str, Any],
     token: TokenPayload = Depends(verify_token),
     settings: Settings = Depends(get_settings),
@@ -102,6 +110,7 @@ async def submit_onboarding(
         "POST",
         f"{settings.user_profile_service_url}/api/v1/onboarding",
         json={**body, "user_id": token.sub},
+        headers=_auth_headers(request),
     )
 
 
@@ -110,6 +119,7 @@ async def submit_onboarding(
     responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
 async def get_profile(
+    request: Request,
     token: TokenPayload = Depends(verify_token),
     settings: Settings = Depends(get_settings),
 ) -> Any:
@@ -117,6 +127,7 @@ async def get_profile(
         "GET",
         f"{settings.user_profile_service_url}/api/v1/profile",
         params={"user_id": token.sub},
+        headers=_auth_headers(request),
     )
 
 
@@ -125,6 +136,7 @@ async def get_profile(
     responses={400: {"model": ErrorResponse}, 401: {"model": ErrorResponse}},
 )
 async def update_profile(
+    request: Request,
     body: dict[str, Any],
     token: TokenPayload = Depends(verify_token),
     settings: Settings = Depends(get_settings),
@@ -133,6 +145,7 @@ async def update_profile(
         "PATCH",
         f"{settings.user_profile_service_url}/api/v1/profile",
         json={**body, "user_id": token.sub},
+        headers=_auth_headers(request),
     )
 
 
@@ -150,13 +163,31 @@ footprint_router = APIRouter(prefix="/footprint", tags=["footprint"])
     },
 )
 async def calculate_footprint(
+    request: Request,
     token: TokenPayload = Depends(verify_token),
     settings: Settings = Depends(get_settings),
 ) -> Any:
+    # Fetch user profile to get all fields needed for footprint calculation
+    profile = await _proxy(
+        "GET",
+        f"{settings.user_profile_service_url}/api/v1/profile",
+        params={"user_id": token.sub},
+        headers=_auth_headers(request),
+    )
     return await _proxy(
         "POST",
         f"{settings.footprint_service_url}/api/v1/footprint/calculate",
-        json={"user_id": token.sub},
+        json={
+            "user_id": token.sub,
+            "transport_mode": profile.get("transport_mode"),
+            "diet_type": profile.get("diet_type"),
+            "home_type": profile.get("home_type"),
+            "home_size_sqm": profile.get("home_size_sqm"),
+            "commute_days_per_week": profile.get("commute_days_per_week", 5),
+            "pet_type": profile.get("pet_type"),
+            "pet_count": profile.get("pet_count", 0),
+        },
+        headers=_auth_headers(request),
     )
 
 
@@ -165,6 +196,7 @@ async def calculate_footprint(
     responses={401: {"model": ErrorResponse}},
 )
 async def get_footprint_history(
+    request: Request,
     weeks: int = Query(default=8, ge=1, le=8),
     token: TokenPayload = Depends(verify_token),
     settings: Settings = Depends(get_settings),
@@ -173,6 +205,7 @@ async def get_footprint_history(
         "GET",
         f"{settings.footprint_service_url}/api/v1/footprint/history",
         params={"user_id": token.sub, "weeks": weeks},
+        headers=_auth_headers(request),
     )
 
 
@@ -186,6 +219,7 @@ env_router = APIRouter(prefix="/env", tags=["env"])
     responses={401: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
 )
 async def get_air_quality(
+    request: Request,
     token: TokenPayload = Depends(verify_token),
     settings: Settings = Depends(get_settings),
 ) -> Any:
@@ -193,6 +227,7 @@ async def get_air_quality(
         "GET",
         f"{settings.env_data_service_url}/api/v1/env/air-quality",
         params={"user_id": token.sub},
+        headers=_auth_headers(request),
     )
 
 
@@ -201,6 +236,7 @@ async def get_air_quality(
     responses={401: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
 )
 async def get_climate_context(
+    request: Request,
     token: TokenPayload = Depends(verify_token),
     settings: Settings = Depends(get_settings),
 ) -> Any:
@@ -208,6 +244,7 @@ async def get_climate_context(
         "GET",
         f"{settings.env_data_service_url}/api/v1/env/climate-context",
         params={"user_id": token.sub},
+        headers=_auth_headers(request),
     )
 
 
@@ -234,6 +271,7 @@ async def get_narrative(
         "GET",
         f"{settings.ai_narrative_service_url}/api/v1/narrative",
         params={"user_id": token.sub},
+        headers=_auth_headers(request),
     )
 
 
@@ -247,6 +285,7 @@ actions_router = APIRouter(prefix="/actions", tags=["actions"])
     responses={401: {"model": ErrorResponse}},
 )
 async def get_actions(
+    request: Request,
     token: TokenPayload = Depends(verify_token),
     settings: Settings = Depends(get_settings),
 ) -> Any:
@@ -254,6 +293,7 @@ async def get_actions(
         "GET",
         f"{settings.actions_service_url}/api/v1/actions",
         params={"user_id": token.sub},
+        headers=_auth_headers(request),
     )
 
 
@@ -262,6 +302,7 @@ async def get_actions(
     responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
 async def complete_action(
+    request: Request,
     action_id: str,
     token: TokenPayload = Depends(verify_token),
     settings: Settings = Depends(get_settings),
@@ -270,6 +311,7 @@ async def complete_action(
         "POST",
         f"{settings.actions_service_url}/api/v1/actions/{action_id}/complete",
         json={"user_id": token.sub},
+        headers=_auth_headers(request),
     )
 
 
@@ -283,6 +325,7 @@ community_router = APIRouter(prefix="/community", tags=["community"])
     responses={401: {"model": ErrorResponse}},
 )
 async def get_community_stats(
+    request: Request,
     token: TokenPayload = Depends(verify_token),
     settings: Settings = Depends(get_settings),
 ) -> Any:
@@ -290,6 +333,7 @@ async def get_community_stats(
         "GET",
         f"{settings.community_service_url}/api/v1/community/stats",
         params={"user_id": token.sub},
+        headers=_auth_headers(request),
     )
 
 
@@ -298,6 +342,7 @@ async def get_community_stats(
     responses={401: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
 )
 async def join_challenge(
+    request: Request,
     token: TokenPayload = Depends(verify_token),
     settings: Settings = Depends(get_settings),
 ) -> Any:
@@ -305,6 +350,7 @@ async def join_challenge(
         "POST",
         f"{settings.community_service_url}/api/v1/community/challenge/join",
         json={"user_id": token.sub},
+        headers=_auth_headers(request),
     )
 
 
