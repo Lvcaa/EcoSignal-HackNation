@@ -52,10 +52,10 @@ export default function LogClothing() {
     try {
       await logAction.mutateAsync({
         action_type: 'clothing',
-        co2_delta_kg: analysis?.co2_estimate_kg ?? 0,
-        description: analysis?.summary || description,
-        image_analysis_id: analysis?.id || null,
-        metadata: { items: analysis?.items || [] },
+        co2_delta_kg: analysis?.result?.total_co2_kg ?? 0,
+        description: description || null,
+        image_analysis_id: null,
+        metadata: { items: analysis?.result?.items || [] },
       })
       navigate('/actions')
     } catch (err) {
@@ -139,23 +139,16 @@ export default function LogClothing() {
           <div className="bg-surface-container-lowest rounded-2xl shadow-card p-5 text-center">
             <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-on-surface/40 mb-2">Impatto stimato</p>
             <p className="text-4xl font-black text-on-surface">
-              {(analysis.co2_estimate_kg ?? 0).toFixed(2)}
+              {(analysis.result?.total_co2_kg ?? 0).toFixed(2)}
             </p>
             <p className="text-sm text-on-surface/50 mt-1">kg CO&#x2082;</p>
           </div>
 
-          {analysis.summary && (
-            <div className="bg-surface-container-lowest rounded-2xl shadow-card p-5">
-              <p className="font-bold text-on-surface mb-2">Riepilogo</p>
-              <p className="text-sm text-on-surface/70">{analysis.summary}</p>
-            </div>
-          )}
-
-          {analysis.items?.length > 0 && (
+          {analysis.result?.items?.length > 0 && (
             <div className="bg-surface-container-lowest rounded-2xl shadow-card p-5">
               <p className="font-bold text-on-surface mb-2">Capi rilevati</p>
               <ul className="space-y-1">
-                {analysis.items.map((item, i) => (
+                {analysis.result.items.map((item, i) => (
                   <li key={i} className="text-sm text-on-surface/70 flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                     {item.name || item}
