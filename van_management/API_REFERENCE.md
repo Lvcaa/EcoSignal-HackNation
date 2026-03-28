@@ -1292,3 +1292,282 @@ Returned when the signal creation payload fails validation:
 - Longitude outside `-180..180`
 - Missing or empty `title`
 - Missing or empty `description`
+
+---
+
+# Carbon API Reference
+
+The carbon API adds deterministic and audit-friendly footprint evaluation
+without changing the existing truck or signals APIs.
+
+The final `co2e_kg` value is never produced by an LLM.
+The backend only accepts structured inputs and evaluates them through pinned
+Climatiq selectors plus deterministic local math where needed.
+Personal and fleet footprints are intentionally kept separate: personal flows
+return `scope: "personal"` while van-derived flows return `scope: "fleet"`.
+
+## Carbon Overview
+
+- Route prefix: `/api/v1/carbon`
+- Provider: Climatiq
+- Determinism strategy: pinned activity mappings + pinned `CLIMATIQ_DATA_VERSION`
+- Current default data version: `32`
+- Persistence: none for carbon results in v1
+- Truck integration: read-only from existing truck history
+- Personal daily footprint: supported
+
+## Carbon Endpoint Summary
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/v1/carbon/evaluate` | Evaluate one deterministic activity |
+| `POST` | `/api/v1/carbon/evaluate/batch` | Evaluate many deterministic activities |
+| `POST` | `/api/v1/carbon/personal/evaluate` | Evaluate one person's daily footprint |
+| `GET` | `/api/v1/carbon/personal/habits` | List reusable personal habit templates |
+| `GET` | `/api/v1/carbon/factors` | List pinned mappings and metadata |
+| `GET` | `/api/v1/carbon/trucks/{truck_id}/latest` | Derive cumulative carbon from stored truck history |
+| `GET` | `/api/v1/carbon/trucks/{truck_id}/history` | Derive segment-by-segment truck carbon history |
+
+## Carbon Response Shape
+
+Every successful carbon evaluation returns the standard response envelope.
+The inner evaluation object contains at least:
+
+```json
+{
+  "scope": "personal",
+  "co2e_kg": 2.0,
+  "unit": "kgCO2e",
+  "source": "climatiq:AIB",
+  "method": "climatiq_basic_estimate",
+  "activity_type": "household_electricity",
+  "emission_factor": 0.4,
+  "factor_unit": "kgCO2e/kWh",
+  "assumptions": [],
+  "confidence": "high",
+  "status": "ok",
+  "timestamp": "2026-03-28T10:15:00Z",
+  "input_quantity": 5,
+  "input_unit": "kWh",
+  "provider_factor_id": "factor-id",
+  "provider_activity_id": "electricity-supply_grid-source_total_supplier_mix",
+  "provider_data_version": "32"
+}
+```
+
+If the backend cannot derive a deterministic number from the available truck
+telemetry, it returns `status: "needs_clarification"` instead of guessing.
+
+## Direct Carbon Evaluation
+
+### `POST /api/v1/carbon/evaluate`
+
+Use this endpoint when the frontend or another service already has a structured
+activity.
+
+Example request:
+
+```bash
+curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/carbon/evaluate \
+  -H "ngrok-skip-browser-warning: true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activity_type": "household_electricity",
+    "quantity": 5,
+    "unit": "kWh"
+  }'
+```
+
+Supported direct activity families include:
+
+- transport: `transport_car_petrol`, `transport_car_diesel`, `public_bus`, `train`
+- utilities: `household_electricity`, `water_usage`
+- food: `food_beef`, `food_chicken`, `food_seafood`, `food_milk`, `food_eggs`, `food_fruit`, `food_vegetables`, `food_grains`, `food_legumes`
+- waste: `waste_plastic_recycled`, `waste_plastic_landfill`, `waste_paper_recycled`, `waste_paper_landfill`, `waste_glass_recycled`, `waste_organic_composted`, `waste_organic_landfill`, `waste_mixed_landfill`
+- fleet proxy: `waste_collection_truck`
+
+### `POST /api/v1/carbon/evaluate/batch`
+
+Accepts a list of direct activities and returns itemized results plus a
+`total_co2e_kg`.
+
+## Personal Daily Footprint
+
+### `POST /api/v1/carbon/personal/evaluate`
+
+This endpoint evaluates one person's full daily footprint from structured
+habits.
+
+Supported sections:
+
+- `transport[]`
+- `food[]`
+- `utilities[]`
+- `waste[]`
+- `habits[]`
+
+Example request:
+
+```bash
+curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/carbon/personal/evaluate \
+  -H "ngrok-skip-browser-warning: true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "person_id": "USER_001",
+    "date": "2026-03-28",
+    "transport": [
+      { "mode": "car_petrol", "distance_km": 20, "occupancy": 2 },
+      { "mode": "bus", "distance_km": 10 }
+    ],
+    "food": [
+      { "food_category": "beef", "quantity": 0.25, "unit": "kg" }
+    ],
+    "utilities": [
+      { "activity_type": "household_electricity", "quantity": 5, "unit": "kWh" }
+    ],
+    "waste": [
+      { "waste_type": "plastic", "treatment": "recycled", "quantity": 1, "unit": "kg" }
+    ]
+  }'
+```
+
+Behavior notes:
+
+- Private car modes require `occupancy`.
+- Bus and train are evaluated as passenger distance.
+- Food categories are deterministic pinned categories, not free text.
+- Waste requires both `waste_type` and `treatment`.
+- Habits are reusable deterministic templates such as `shower` or `washing_machine`.
+- The response includes category totals for `transport`, `food`, `utilities`, and `waste`.
+- The response is always tagged with `scope: "personal"`.
+
+### `GET /api/v1/carbon/personal/habits`
+
+Returns the supported reusable habit templates for the personal branch.
+
+This is the scalability hook for the frontend:
+
+- the client can fetch the supported habits dynamically
+- each habit declares its fixed assumptions
+- each habit expands to one or more deterministic utility activities
+- adding a new habit only requires registering a new template in the backend
+
+Example response:
+
+```json
+{
+  "success": true,
+  "message": "Loaded 2 personal habit template(s)",
+  "data": {
+    "habits": [
+      {
+        "habit_type": "shower",
+        "label": "Standard shower",
+        "category": "utilities",
+        "input_unit": "count",
+        "assumptions": [
+          "One shower is modeled as 60 liters of water usage.",
+          "One shower is modeled as 2.1 kWh of energy for hot water heating."
+        ],
+        "components": [
+          {
+            "activity_type": "water_usage",
+            "quantity_per_occurrence": 0.06,
+            "unit": "m3",
+            "label": "water",
+            "assumptions": []
+          },
+          {
+            "activity_type": "household_electricity",
+            "quantity_per_occurrence": 2.1,
+            "unit": "kWh",
+            "label": "heating_energy",
+            "assumptions": []
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Truck-Derived Carbon
+
+### `GET /api/v1/carbon/trucks/{truck_id}/latest`
+
+This endpoint reads truck states already stored by `/api/v1/trucks/*`.
+It never inserts new truck rows and never changes truck versioning.
+
+Derivation flow:
+
+1. Load the truck history already stored in the backend.
+2. Order it from oldest to newest.
+3. Compute straight-line distance between consecutive GPS points with the
+   Haversine formula.
+4. Sum the distance.
+5. Evaluate the cumulative distance with the pinned truck factor.
+
+If the truck has fewer than 2 stored states, the response is still `200 OK`
+but uses `status: "needs_clarification"`.
+Truck-derived responses are always tagged with `scope: "fleet"`.
+
+### `GET /api/v1/carbon/trucks/{truck_id}/history`
+
+Returns truck carbon segments from newest to oldest.
+Each segment contains:
+
+- `from_version`
+- `to_version`
+- `distance_km`
+- `from_position_timestamp`
+- `to_position_timestamp`
+- nested deterministic carbon evaluation metadata
+
+## Carbon Factors Catalog
+
+### `GET /api/v1/carbon/factors`
+
+Returns the pinned catalog used by the carbon module.
+
+Each catalog entry includes:
+
+- `activity_type`
+- `label`
+- `category`
+- `scope`
+- `allowed_units`
+- `parameter_kind`
+- `selector`
+- `assumptions`
+- `confidence`
+
+This is the audit endpoint for understanding exactly which deterministic
+selector is used for each supported activity.
+
+## Carbon Error Handling
+
+### `404 Not Found`
+
+Returned by truck-derived carbon endpoints when the requested truck does not
+exist in the existing truck storage.
+
+### `422 Unprocessable Entity`
+
+Returned when the request payload is structurally invalid.
+
+Typical causes:
+
+- unsupported unit for the selected activity
+- missing `occupancy` for `car_petrol` or `car_diesel`
+- unsupported `waste_type` / `treatment` combination
+- empty personal daily request
+
+### `503 Service Unavailable`
+
+Returned when the carbon provider is not configured or temporarily unavailable.
+
+Typical causes:
+
+- missing `CLIMATIQ_API_KEY`
+- Climatiq request timeout
+- provider-side error while resolving a pinned selector

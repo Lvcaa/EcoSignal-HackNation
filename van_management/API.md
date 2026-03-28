@@ -10,11 +10,12 @@ It covers:
 3. Fleet-wide reads
 4. Per-truck polling and history
 5. Citizen/user signals with optional image attachments
+6. Deterministic carbon evaluation for direct activities, personal daily habits, and truck-derived metrics
 
 ## Overview
 
 - Service name: `van_management`
-- Main route prefixes: `/api/v1/trucks`, `/api/v1/signals`
+- Main route prefixes: `/api/v1/trucks`, `/api/v1/signals`, `/api/v1/carbon`
 - Public base URL: `https://dayana-nonfulminating-novella.ngrok-free.dev`
 - Local base URL: `http://localhost:8000`
 - Public Swagger UI: `https://dayana-nonfulminating-novella.ngrok-free.dev/docs`
@@ -40,6 +41,7 @@ Use these values for every external request:
 - Content type for POST requests: `application/json`
 - Truck route prefix: `/api/v1/trucks`
 - Signals route prefix: `/api/v1/signals`
+- Carbon route prefix: `/api/v1/carbon`
 
 Recommended verification flow:
 
@@ -49,6 +51,7 @@ Recommended verification flow:
 4. Call `GET /api/v1/trucks/{truck_id}/latest`
 5. Call `POST /api/v1/trucks/batch` for bulk truck ingestion
 6. Call `POST /api/v1/signals` to create a signal
+7. Call `GET /api/v1/carbon/factors` before integrating deterministic carbon activities
 
 Example:
 
@@ -199,6 +202,12 @@ Validation and explicit HTTP errors use FastAPI's standard error format.
 | `POST` | `/api/v1/signals/{signal_id}/attachments` | Upload one or more signal images |
 | `GET` | `/api/v1/signals/{signal_id}/attachments/{attachment_id}` | Download an attachment |
 | `DELETE` | `/api/v1/signals/{signal_id}` | Delete a signal and its attachments |
+| `POST` | `/api/v1/carbon/evaluate` | Evaluate one deterministic carbon activity |
+| `POST` | `/api/v1/carbon/evaluate/batch` | Evaluate multiple deterministic carbon activities |
+| `POST` | `/api/v1/carbon/personal/evaluate` | Evaluate one person's daily carbon footprint |
+| `GET` | `/api/v1/carbon/factors` | List pinned carbon mappings and metadata |
+| `GET` | `/api/v1/carbon/trucks/{truck_id}/latest` | Derive the cumulative truck carbon footprint |
+| `GET` | `/api/v1/carbon/trucks/{truck_id}/history` | Derive segment-by-segment truck carbon history |
 
 ## Meta Endpoints
 
@@ -386,6 +395,60 @@ Use history for:
 - backfill after downtime
 - auditing
 - debugging version progression
+
+## Carbon Endpoints
+
+### `POST /api/v1/carbon/evaluate`
+
+Evaluates one deterministic carbon activity using a pinned Climatiq selector.
+
+Example:
+
+```bash
+curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/carbon/evaluate \
+  -H "ngrok-skip-browser-warning: true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activity_type": "household_electricity",
+    "quantity": 5,
+    "unit": "kWh"
+  }'
+```
+
+### `POST /api/v1/carbon/personal/evaluate`
+
+Evaluates a full daily personal footprint from structured habits.
+
+Example:
+
+```bash
+curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/carbon/personal/evaluate \
+  -H "ngrok-skip-browser-warning: true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "person_id": "USER_001",
+    "date": "2026-03-28",
+    "transport": [{"mode": "car_petrol", "distance_km": 20, "occupancy": 2}],
+    "food": [{"food_category": "beef", "quantity": 0.25, "unit": "kg"}],
+    "utilities": [{"activity_type": "household_electricity", "quantity": 5, "unit": "kWh"}],
+    "waste": [{"waste_type": "plastic", "treatment": "recycled", "quantity": 1, "unit": "kg"}]
+  }'
+```
+
+### `GET /api/v1/carbon/factors`
+
+Returns the deterministic activity catalog, pinned Climatiq selectors, assumptions,
+and the configured Climatiq data version.
+
+### `GET /api/v1/carbon/trucks/{truck_id}/latest`
+
+Reads the already stored immutable truck history and derives a cumulative carbon
+footprint without changing truck versioning or persistence.
+
+### `GET /api/v1/carbon/trucks/{truck_id}/history`
+
+Returns derived truck carbon segments from newest to oldest, plus cumulative
+distance and cumulative CO2e totals.
 
 ## Validation And Errors
 
