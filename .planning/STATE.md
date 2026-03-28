@@ -1,7 +1,7 @@
 # Project State
 
 ## Current Position
-Phase 1 (Enhanced Onboarding) — Plan 02 complete, ready for Plan 03
+Phase 1 (Enhanced Onboarding) — Plan 03 complete, ready for Plan 04
 
 ## Accumulated Decisions
 - Existing microservice architecture preserved
@@ -14,6 +14,9 @@ Phase 1 (Enhanced Onboarding) — Plan 02 complete, ready for Plan 03
 - ProgressDots default total = 6
 - PetStep is final step, triggers profile save then footprint calculation
 - create_all() won't alter existing tables — DB volume reset needed after model changes
+- Claude Vision API (Anthropic SDK) for image analysis
+- Port 8008 for image-analyzer service
+- Three analysis types: meal, grocery, clothing with Italian-language prompts
 
 ## Deferred Issues
 None yet
