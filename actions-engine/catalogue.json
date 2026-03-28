@@ -1,0 +1,122 @@
+[
+  {
+    "action_id": "transport_01",
+    "title": "Usa i mezzi pubblici il martedì",
+    "description": "Sostituisci un giorno di auto con bus o metro.",
+    "category": "transport",
+    "co2_saving_kg_week": 4.2,
+    "effort": "easy"
+  },
+  {
+    "action_id": "transport_02",
+    "title": "Vai al lavoro in bici per un giorno",
+    "description": "Pedala invece di guidare: zero emissioni e più salute.",
+    "category": "transport",
+    "co2_saving_kg_week": 5.0,
+    "effort": "medium"
+  },
+  {
+    "action_id": "transport_03",
+    "title": "Condividi l'auto con un collega",
+    "description": "Il carpooling dimezza le emissioni per persona.",
+    "category": "transport",
+    "co2_saving_kg_week": 3.5,
+    "effort": "medium"
+  },
+  {
+    "action_id": "transport_04",
+    "title": "Cammina per tragitti sotto 2 km",
+    "description": "Per le distanze brevi, lascia l'auto a casa.",
+    "category": "transport",
+    "co2_saving_kg_week": 1.8,
+    "effort": "easy"
+  },
+  {
+    "action_id": "food_01",
+    "title": "Un giorno vegetariano a settimana",
+    "description": "Sostituisci carne con legumi per un pasto completo.",
+    "category": "food",
+    "co2_saving_kg_week": 3.0,
+    "effort": "easy"
+  },
+  {
+    "action_id": "food_02",
+    "title": "Compra frutta e verdura di stagione",
+    "description": "I prodotti di stagione hanno meno emissioni da trasporto e serra.",
+    "category": "food",
+    "co2_saving_kg_week": 1.5,
+    "effort": "easy"
+  },
+  {
+    "action_id": "food_03",
+    "title": "Riduci lo spreco alimentare",
+    "description": "Pianifica i pasti e congela gli avanzi prima che scadano.",
+    "category": "food",
+    "co2_saving_kg_week": 2.5,
+    "effort": "medium"
+  },
+  {
+    "action_id": "food_04",
+    "title": "Scegli proteine vegetali per tre cene",
+    "description": "Tofu, lenticchie o ceci al posto della carne rossa.",
+    "category": "food",
+    "co2_saving_kg_week": 5.5,
+    "effort": "hard"
+  },
+  {
+    "action_id": "home_01",
+    "title": "Abbassa il riscaldamento di 1°C",
+    "description": "Un grado in meno riduce il consumo energetico del 7%.",
+    "category": "home",
+    "co2_saving_kg_week": 3.8,
+    "effort": "easy"
+  },
+  {
+    "action_id": "home_02",
+    "title": "Spegni le luci nelle stanze vuote",
+    "description": "Un'abitudine semplice che taglia il consumo elettrico.",
+    "category": "home",
+    "co2_saving_kg_week": 0.8,
+    "effort": "easy"
+  },
+  {
+    "action_id": "home_03",
+    "title": "Usa la lavatrice solo a pieno carico",
+    "description": "Meno cicli significa meno acqua ed energia sprecata.",
+    "category": "home",
+    "co2_saving_kg_week": 1.2,
+    "effort": "medium"
+  },
+  {
+    "action_id": "home_04",
+    "title": "Isola le finestre con guarnizioni",
+    "description": "Riduci le dispersioni termiche con materiali economici.",
+    "category": "home",
+    "co2_saving_kg_week": 4.5,
+    "effort": "hard"
+  },
+  {
+    "action_id": "community_01",
+    "title": "Organizza un gruppo di cammino nel quartiere",
+    "description": "Coinvolgi i vicini in passeggiate settimanali al posto dell'auto.",
+    "category": "community",
+    "co2_saving_kg_week": 2.0,
+    "effort": "medium"
+  },
+  {
+    "action_id": "community_02",
+    "title": "Condividi consigli eco nel condominio",
+    "description": "Appendi un foglio con suggerimenti per risparmiare energia.",
+    "category": "community",
+    "co2_saving_kg_week": 1.0,
+    "effort": "easy"
+  },
+  {
+    "action_id": "community_03",
+    "title": "Partecipa a una giornata di pulizia locale",
+    "description": "Unisciti a un evento di raccolta rifiuti nel tuo comune.",
+    "category": "community",
+    "co2_saving_kg_week": 0.5,
+    "effort": "hard"
+  }
+]

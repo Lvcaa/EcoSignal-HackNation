@@ -1,53 +1,73 @@
 # EcoSignal — Development Makefile
-# Usage: make <target> [s=service-name]
 
-COMPOSE = docker compose
-
-.PHONY: up down logs health db-migrate restart clean ps
+.PHONY: up down logs logs-service health db-migrate restart clean ps demo-trigger shell narrative-test
 
 ## Start all services (build + detach)
 up:
-	$(COMPOSE) up --build -d
+	docker compose up --build -d
 
 ## Stop all services
 down:
-	$(COMPOSE) down
+	docker compose down
 
-## Tail logs (all services, or pass s=<name>)
+## Tail logs (all services)
 logs:
-ifdef s
-	$(COMPOSE) logs -f $(s)
-else
-	$(COMPOSE) logs -f
-endif
+	docker compose logs -f
 
-## Check health of all running services
+## Tail logs for a specific service
+logs-service:
+	@read -p "Service name: " svc; docker compose logs -f $$svc
+
+## Check health of all service endpoints
 health:
-	@echo "=== EcoSignal Health Check ==="
-	@curl -sf http://localhost:8000/health && echo " ✓ api-gateway"    || echo " ✗ api-gateway"
-	@$(COMPOSE) exec -T user-profile      python -c "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')" 2>/dev/null && echo " ✓ user-profile"      || echo " ✗ user-profile"
-	@$(COMPOSE) exec -T footprint-engine   python -c "import urllib.request; urllib.request.urlopen('http://localhost:8002/health')" 2>/dev/null && echo " ✓ footprint-engine"  || echo " ✗ footprint-engine"
-	@$(COMPOSE) exec -T env-data           python -c "import urllib.request; urllib.request.urlopen('http://localhost:8003/health')" 2>/dev/null && echo " ✓ env-data"          || echo " ✗ env-data"
-	@$(COMPOSE) exec -T ai-narrative       python -c "import urllib.request; urllib.request.urlopen('http://localhost:8004/health')" 2>/dev/null && echo " ✓ ai-narrative"      || echo " ✗ ai-narrative"
-	@$(COMPOSE) exec -T postgres           pg_isready -U ecosignal > /dev/null 2>&1 && echo " ✓ postgres"       || echo " ✗ postgres"
-	@$(COMPOSE) exec -T redis              redis-cli ping > /dev/null 2>&1 && echo " ✓ redis"                  || echo " ✗ redis"
+	@echo "Checking all service health endpoints..."
+	@for port in 8000 8001 8002 8003 8004 8005 8006 8007; do \
+		echo -n "Port $$port: "; \
+		curl -sf http://localhost:$$port/health | python3 -m json.tool \
+		|| echo "UNHEALTHY"; \
+	done
 
 ## Run Alembic migrations (user-profile)
 db-migrate:
-	$(COMPOSE) exec user-profile alembic upgrade head
+	docker compose exec user-profile alembic upgrade head
 
-## Restart a specific service (pass s=<name>)
+## Restart a specific service
 restart:
-ifdef s
-	$(COMPOSE) restart $(s)
-else
-	@echo "Usage: make restart s=<service-name>"
-endif
+	@read -p "Service name: " svc; docker compose restart $$svc
 
 ## Tear down everything including volumes (DESTRUCTIVE)
 clean:
-	$(COMPOSE) down -v --remove-orphans
+	docker compose down -v --remove-orphans
 
 ## Show running containers
 ps:
-	$(COMPOSE) ps
+	docker compose ps
+
+## Trigger env-data prefetch job via scheduler
+demo-trigger:
+	@echo "Triggering env-data prefetch job..."
+	curl -sf http://localhost:8007/health/trigger/prefetch_active_zips \
+		| python3 -m json.tool
+
+## Open a shell in a service container
+shell:
+	@read -p "Service name: " svc; \
+	docker compose exec $$svc /bin/bash
+
+## End-to-end narrative test (register → onboard → get narrative)
+narrative-test:
+	@echo "Testing full narrative pipeline for ZIP 00100 (Roma)..."
+	@echo "1. Register user..."
+	@TOKEN=$$(curl -sf -X POST http://localhost:8000/api/v1/auth/register \
+		-H "Content-Type: application/json" \
+		-d '{"email":"demo@ecosignal.it","password":"demo1234","display_name":"Demo"}' \
+		| python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])"); \
+	echo "Token: $$TOKEN"; \
+	echo "2. Onboarding..."; \
+	curl -sf -X POST http://localhost:8000/api/v1/onboarding \
+		-H "Authorization: Bearer $$TOKEN" \
+		-H "Content-Type: application/json" \
+		-d '{"zip_code":"00100","transport_mode":"car","diet_type":"meat_weekly","home_type":"apartment","home_size_sqm":70}'; \
+	echo "3. Get narrative..."; \
+	curl -sf http://localhost:8000/api/v1/narrative \
+		-H "Authorization: Bearer $$TOKEN" | python3 -m json.tool

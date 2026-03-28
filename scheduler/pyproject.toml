@@ -1,0 +1,19 @@
+[project]
+name = "ecosignal-scheduler"
+version = "1.0.0"
+description = "EcoSignal background job scheduler service"
+requires-python = ">=3.12"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 99
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

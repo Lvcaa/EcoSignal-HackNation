@@ -8,6 +8,7 @@ from typing import Any, AsyncIterator
 import redis.asyncio as aioredis
 from fastapi import FastAPI, HTTPException, Query
 
+from app.cache import get_active_zips
 from app.config import Settings
 from app.schemas import AirQualityReading, ClimateContext, EnvDataResponse
 from app.service import get_env_data
@@ -63,3 +64,9 @@ async def air_quality(zip_code: str = Query(...)) -> Any:
 async def climate_context(zip_code: str = Query(...)) -> Any:
     data = await _get_data(zip_code)
     return data.climate
+
+
+@app.get("/api/v1/env/active-zips")
+async def active_zips(limit: int = Query(default=20, ge=1, le=100)) -> dict[str, list[str]]:
+    zips = await get_active_zips(app.state.redis, limit)
+    return {"zips": zips}

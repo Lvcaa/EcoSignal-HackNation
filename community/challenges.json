@@ -1,0 +1,34 @@
+[
+  {
+    "challenge_id": "no_car_wednesday",
+    "title": "Mercoledì senz'auto",
+    "description": "Usa i mezzi pubblici o la bici ogni mercoledì questa settimana.",
+    "category": "transport",
+    "co2_saving_kg_week": 4.2,
+    "participant_target": 100
+  },
+  {
+    "challenge_id": "meat_free_week",
+    "title": "Settimana senza carne",
+    "description": "Prova un'alimentazione vegetariana per tutta la settimana.",
+    "category": "food",
+    "co2_saving_kg_week": 6.5,
+    "participant_target": 80
+  },
+  {
+    "challenge_id": "energy_saver",
+    "title": "Risparmio energetico domestico",
+    "description": "Riduci il riscaldamento di 1°C e spegni le luci non necessarie.",
+    "category": "home",
+    "co2_saving_kg_week": 3.8,
+    "participant_target": 120
+  },
+  {
+    "challenge_id": "local_shopping",
+    "title": "Spesa a km zero",
+    "description": "Compra solo prodotti locali e di stagione questa settimana.",
+    "category": "food",
+    "co2_saving_kg_week": 2.9,
+    "participant_target": 90
+  }
+]
