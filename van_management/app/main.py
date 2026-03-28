@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.trucks import router as trucks_router
 from app.core.config import settings
@@ -25,6 +27,20 @@ app.add_middleware(
 )
 
 app.include_router(trucks_router)
+
+
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
+    """Safety net: if all retries in the service layer are exhausted, return 409
+    instead of letting an unhandled IntegrityError become a 500."""
+    return JSONResponse(
+        status_code=409,
+        content={
+            "success": False,
+            "message": "Version conflict: concurrent write detected, please retry",
+            "data": None,
+        },
+    )
 
 
 @app.get("/health", tags=["meta"], response_model=ApiResponse)

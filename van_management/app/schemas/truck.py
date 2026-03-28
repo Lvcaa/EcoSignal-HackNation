@@ -43,6 +43,7 @@ class TruckUpdateRequest(BaseModel):
 class TruckStateOut(BaseModel):
     id: int
     truck_id: str
+    company_id: str | None = None
     waste_type: str
     latitude: float
     longitude: float
@@ -57,3 +58,16 @@ class TruckHistoryOut(BaseModel):
     page: int
     page_size: int
     records: list[TruckStateOut]
+
+
+class TruckBatchUpdateRequest(BaseModel):
+    company_id: str = Field(..., min_length=1, max_length=64)
+    updates: list[TruckUpdateRequest] = Field(..., min_length=1, max_length=500)
+
+
+class BatchUpdateOut(BaseModel):
+    company_id: str
+    accepted: int
+    records: list[TruckStateOut]
+
+

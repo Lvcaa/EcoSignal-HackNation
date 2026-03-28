@@ -20,7 +20,11 @@ class TruckStateVersion(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     truck_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
-    waste_type: Mapped[WasteType] = mapped_column(Enum(WasteType), nullable=False)
+    company_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    waste_type: Mapped[WasteType] = mapped_column(
+        Enum(WasteType, values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+    )
     latitude: Mapped[float] = mapped_column(Float, nullable=False)
     longitude: Mapped[float] = mapped_column(Float, nullable=False)
     position_timestamp: Mapped[str] = mapped_column(DateTime(timezone=True), nullable=False)
