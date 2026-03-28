@@ -93,7 +93,7 @@ export default function Dashboard() {
       <section className="px-4 mt-6">
         <h3 className="text-base font-bold text-on-surface mb-3">Le azioni di oggi</h3>
         <div className="bg-surface-container-lowest rounded-2xl shadow-card p-4">
-          <ActionTimeline actions={todayActions.data} isLoading={todayActions.isLoading} />
+          <ActionTimeline actions={Array.isArray(todayActions.data) ? todayActions.data : todayActions.data?.actions ?? []} isLoading={todayActions.isLoading} />
         </div>
       </section>
 
