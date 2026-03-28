@@ -34,7 +34,7 @@ export default function Dashboard() {
 
   const fp = footprint.data
   const baselineKg = fp?.total_kg_co2 ?? 0
-  const currentWeekKg = weeklySummary.data?.total_co2_kg ?? 0
+  const currentWeekKg = weeklySummary.data?.total_co2_delta_kg ?? 0
 
   // Comparison logic
   const deltaPct = baselineKg > 0

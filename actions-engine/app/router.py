@@ -196,6 +196,11 @@ async def submit_weekly_survey(
 
     co2 = calculate_appliance_co2(body)
 
+    # Delete previous appliance log for this week so re-submission replaces
+    week_start = body.week_start
+    week_end = week_start + timedelta(days=6)
+    await repo.delete_appliance_logs_for_week(uid, week_start, week_end)
+
     log = await repo.create_action_log(
         user_id=uid,
         action_type="appliance",

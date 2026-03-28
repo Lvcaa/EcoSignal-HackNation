@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from uuid import UUID
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import ActionCompletion, ActionLog, UserStreak
@@ -151,6 +151,22 @@ class ActionRepository:
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
+
+    async def delete_appliance_logs_for_week(
+        self, user_id: str, week_start: date, week_end: date
+    ) -> None:
+        """Delete existing appliance logs for the given week so re-submission replaces."""
+        start = datetime.combine(week_start, datetime.min.time())
+        end = datetime.combine(week_end, datetime.max.time())
+        stmt = delete(ActionLog).where(
+            and_(
+                ActionLog.user_id == user_id,
+                ActionLog.action_type == "appliance",
+                ActionLog.created_at >= start,
+                ActionLog.created_at <= end,
+            )
+        )
+        await self.session.execute(stmt)
 
     async def get_actions_by_date_range(
         self, user_id: str, start_date: date, end_date: date
