@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { calculateFootprint, getHistory } from '../api/footprint'
 import { getAirQuality } from '../api/envData'
 import { getNarrative } from '../api/narrative'
-import { getActions, completeAction, logAction, getDailyActions, getWeeklySummary } from '../api/actions'
+import { getActions, completeAction, logAction, getDailyActions, getWeeklySummary, submitWeeklySurvey, getLatestSurvey } from '../api/actions'
 
 export function useFootprint() {
   return useQuery({
@@ -74,5 +74,24 @@ export function useWeeklySummary() {
   return useQuery({
     queryKey: ['weekly-summary'],
     queryFn: () => getWeeklySummary().then((r) => r.data),
+  })
+}
+
+export function useLatestSurvey() {
+  return useQuery({
+    queryKey: ['latest-survey'],
+    queryFn: () => getLatestSurvey().then((r) => r.data),
+  })
+}
+
+export function useSubmitSurvey() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data) => submitWeeklySurvey(data).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['latest-survey'] })
+      qc.invalidateQueries({ queryKey: ['weekly-summary'] })
+      qc.invalidateQueries({ queryKey: ['footprint'] })
+    },
   })
 }

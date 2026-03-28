@@ -14,3 +14,9 @@ export const getDailyActions = (date) =>
 
 export const getWeeklySummary = () =>
   client.get('/actions/weekly')
+
+export const submitWeeklySurvey = (data) =>
+  client.post('/actions/weekly-survey', data)
+
+export const getLatestSurvey = () =>
+  client.get('/actions/weekly-survey/latest')

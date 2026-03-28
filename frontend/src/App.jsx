@@ -15,6 +15,7 @@ import LogMeal from './pages/LogMeal'
 import LogTrip from './pages/LogTrip'
 import LogGrocery from './pages/LogGrocery'
 import LogClothing from './pages/LogClothing'
+import WeeklySurvey from './pages/WeeklySurvey'
 import Community from './pages/Community'
 import Progress from './pages/Progress'
 import Profile from './pages/Profile'
@@ -100,6 +101,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AppLayout><LogClothing /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/weekly-survey"
+        element={
+          <ProtectedRoute>
+            <AppLayout><WeeklySurvey /></AppLayout>
           </ProtectedRoute>
         }
       />

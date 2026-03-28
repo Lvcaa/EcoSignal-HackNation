@@ -351,6 +351,41 @@ async def get_weekly_summary(
 
 
 @actions_router.post(
+    "/weekly-survey",
+    responses={401: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+)
+async def submit_weekly_survey(
+    request: Request,
+    body: dict[str, Any],
+    token: TokenPayload = Depends(verify_token),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    return await _proxy(
+        "POST",
+        f"{settings.actions_service_url}/api/v1/actions/weekly-survey",
+        json={**body, "user_id": token.sub},
+        headers=_auth_headers(request),
+    )
+
+
+@actions_router.get(
+    "/weekly-survey/latest",
+    responses={401: {"model": ErrorResponse}},
+)
+async def get_latest_survey(
+    request: Request,
+    token: TokenPayload = Depends(verify_token),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    return await _proxy(
+        "GET",
+        f"{settings.actions_service_url}/api/v1/actions/weekly-survey/latest",
+        params={"user_id": token.sub},
+        headers=_auth_headers(request),
+    )
+
+
+@actions_router.post(
     "/{action_id}/complete",
     responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
