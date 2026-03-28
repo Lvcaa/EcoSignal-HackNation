@@ -1,7 +1,7 @@
 # Project State
 
 ## Current Position
-Phase 1 (Enhanced Onboarding) — Plan 04 complete, ready for Plan 05
+Phase 1 (Enhanced Onboarding) — Plan 05 complete, ready for Plan 06
 
 ## Accumulated Decisions
 - Existing microservice architecture preserved
@@ -21,6 +21,9 @@ Phase 1 (Enhanced Onboarding) — Plan 04 complete, ready for Plan 05
 - Trip CO2 calculated locally: car=0.21, transit=0.089, bike=0, walk=0 kg/km
 - BottomNav has 5 tabs: Home, Azioni, Community, Progress, Profilo
 - Image-analyzer response accessed via analysis.result.total_co2_kg (nested under result)
+- Appliance CO2 factors: washing_machine cold=0.3, warm=0.6, hot=1.0, very_hot=1.5; dishwasher eco=0.4, normal=0.7, intensive=1.1; dryer=2.0 kg/cycle
+- CO2 factors duplicated in actions-engine service (no cross-service imports)
+- Weekly survey stored as ActionLog with type=appliance
 
 ## Deferred Issues
 None yet

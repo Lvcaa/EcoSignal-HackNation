@@ -25,7 +25,7 @@
 - Clothing purchase logging
 - Update actions-engine to handle new action types with CO2 deltas
 
-### Phase 4: Weekly Surveys & Appliance Tracking
+### Phase 4: Weekly Surveys & Appliance Tracking [COMPLETE - Plan 05]
 **Goal:** Implement weekly questionnaires for laundry/dishwasher usage and aggregate into footprint.
 - Weekly survey UI (lavatrice/lavastoviglie frequency, temperature, load size)
 - Scheduler-triggered push for weekly surveys
