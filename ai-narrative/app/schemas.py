@@ -6,6 +6,8 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 # ── Enums (local copy — no cross-service imports) ──────────────────
@@ -34,6 +36,14 @@ class HomeType(StrEnum):
 # ── Request ────────────────────────────────────────────────────────
 
 
+class DailyAction(BaseModel):
+    """A single logged daily action with its CO2 impact."""
+
+    type: str  # meal | trip | grocery | clothing | appliance
+    description: str
+    co2_kg: float
+
+
 class NarrativeRequest(BaseModel):
     """Aggregated data sent by api-gateway to generate a narrative."""
 
@@ -55,6 +65,10 @@ class NarrativeRequest(BaseModel):
     anomaly_label: str | None = None
     air_is_fallback: bool = False
     climate_is_fallback: bool = False
+    # Daily action tracking context
+    daily_actions: list[DailyAction] = Field(default_factory=list)
+    baseline_co2_kg: Optional[float] = None
+    current_week_co2_kg: Optional[float] = None
 
 
 # ── Response ───────────────────────────────────────────────────────

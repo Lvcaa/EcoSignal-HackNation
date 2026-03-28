@@ -11,9 +11,9 @@ if TYPE_CHECKING:
     from app.schemas import NarrativeRequest
 
 SYSTEM_PROMPT: str = """\
-You are EcoSignal's climate narrative engine. Your job is to write a \
+You are Green Buddy's climate narrative engine. Your job is to write a \
 short, warm, non-alarmist message in Italian that connects a user's \
-weekly habits to real local environmental data.
+weekly habits and daily actions to real local environmental data.
 
 Rules:
 - Always write in Italian
@@ -21,6 +21,11 @@ Rules:
 - Never use technical jargon
 - Never blame or shame the user
 - Always ground the narrative in the actual numbers provided
+- If baseline and current week CO2 are provided, compare them: \
+"Questa settimana il tuo impatto è X% [inferiore/superiore] rispetto alla tua baseline"
+- If daily actions are provided, give specific feedback on the most \
+impactful ones, e.g. "Il pasto di oggi ha aggiunto 2.3 kg CO₂ — un po' sopra la media"
+- Keep the tone warm and encouraging, like a supportive friend
 - If air or climate data is marked as fallback, do not mention \
 specific air quality or temperature numbers — speak in general terms
 - Respond ONLY with a valid JSON object. No markdown, no preamble.
@@ -28,7 +33,7 @@ specific air quality or temperature numbers — speak in general terms
 JSON schema to follow exactly:
 {
   "headline": "<1 sentence, max 120 chars, warm and specific>",
-  "body": "<2-3 sentences connecting habits to local data>",
+  "body": "<2-3 sentences connecting habits, daily actions, and baseline comparison to local data>",
   "local_context": "<1 sentence about today's local conditions>",
   "source_note": "<attribution, e.g. Basato su dati ISPRA 2024 · OpenAQ oggi>"
 }
@@ -85,6 +90,31 @@ def build_user_message(request: NarrativeRequest) -> str:
     food_kg = request.breakdown.get("food_kg", 0.0)
     home_kg = request.breakdown.get("home_kg", 0.0)
 
+    # Baseline comparison section
+    baseline_section = ""
+    if request.baseline_co2_kg is not None and request.current_week_co2_kg is not None:
+        if request.baseline_co2_kg > 0:
+            delta_pct = (
+                (request.current_week_co2_kg - request.baseline_co2_kg)
+                / request.baseline_co2_kg
+            ) * 100
+            direction = "inferiore" if delta_pct < 0 else "superiore"
+            baseline_section = (
+                f"\nBaseline settimanale: {request.baseline_co2_kg:.1f} kg CO₂\n"
+                f"CO₂ questa settimana: {request.current_week_co2_kg:.1f} kg CO₂\n"
+                f"Variazione: {abs(delta_pct):.1f}% {direction} rispetto alla baseline\n"
+            )
+
+    # Daily actions section
+    actions_section = ""
+    if request.daily_actions:
+        actions_lines = ["Azioni di oggi:"]
+        for action in request.daily_actions:
+            actions_lines.append(
+                f"  - {action.type}: {action.description} ({action.co2_kg:.1f} kg CO₂)"
+            )
+        actions_section = "\n" + "\n".join(actions_lines) + "\n"
+
     return (
         f"Città: {city_display}, CAP: {request.zip_code}\n"
         f"Trasporto: {transport_label}\n"
@@ -97,6 +127,8 @@ def build_user_message(request: NarrativeRequest) -> str:
         f"  - Casa: {home_kg} kg\n"
         f"Confronto media nazionale: {avg_pct:+.1f}%\n"
         f"Livello: {request.label}\n"
+        f"{baseline_section}"
+        f"{actions_section}"
         f"\n"
         f"{air_section}\n"
         f"{climate_section}"
