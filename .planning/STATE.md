@@ -1,7 +1,7 @@
 # Project State
 
 ## Current Position
-Phase 1 (Enhanced Onboarding) — Plan 03 complete, ready for Plan 04
+Phase 1 (Enhanced Onboarding) — Plan 04 complete, ready for Plan 05
 
 ## Accumulated Decisions
 - Existing microservice architecture preserved
@@ -17,6 +17,10 @@ Phase 1 (Enhanced Onboarding) — Plan 03 complete, ready for Plan 04
 - Claude Vision API (Anthropic SDK) for image analysis
 - Port 8008 for image-analyzer service
 - Three analysis types: meal, grocery, clothing with Italian-language prompts
+- ActionLog model stores per-action CO2 deltas with flexible JSON metadata
+- Trip CO2 calculated locally: car=0.21, transit=0.089, bike=0, walk=0 kg/km
+- BottomNav has 5 tabs: Home, Azioni, Community, Progress, Profilo
+- Image-analyzer response accessed via analysis.result.total_co2_kg (nested under result)
 
 ## Deferred Issues
 None yet
