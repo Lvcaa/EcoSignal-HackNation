@@ -1,7 +1,8 @@
 # EcoSignal Backend
 
 Truck telemetry ingestion service for the EcoSignal waste-management platform.
-Receives truck state updates and stores every version in PostgreSQL.
+Receives truck state updates, stores every version in PostgreSQL, and exposes a
+signals API for geolocated reports with optional image attachments.
 
 ---
 
@@ -11,23 +12,29 @@ Receives truck state updates and stores every version in PostgreSQL.
 van_management/
   app/
     api/v1/trucks.py      # Route handlers
+    api/v1/signals.py     # Signal and attachment route handlers
     core/
       config.py            # Settings from env vars
       database.py          # SQLAlchemy engine & session
       logging.py           # Logging setup
     models/truck_state.py  # ORM model
+    models/signal.py       # Signal and attachment ORM models
     schemas/
       truck.py             # Pydantic request/response schemas
+      signal.py            # Signal request/response schemas
       common.py            # Shared response envelope
     repositories/
       truck_repository.py  # DB access layer
+      signal_repository.py # Signal DB access layer
     services/
       truck_service.py     # Business logic
+      signal_service.py    # Signal business logic and file handling
     main.py                # FastAPI app entrypoint
   tests/
     conftest.py            # Fixtures (SQLite in-memory)
     test_health.py
     test_trucks.py
+    test_signals.py
   alembic/                 # Database migrations
   scripts/run_dev.sh       # Dev runner
   Dockerfile
@@ -61,6 +68,7 @@ with any local Postgres already using port `5432`.
 
 Full endpoint-by-endpoint integration docs are available in
 `API_REFERENCE.md`.
+Short-form API docs are available in `API.md`.
 
 ### Run migrations inside Docker
 
@@ -100,6 +108,7 @@ uvicorn app.main:app --reload --port 8000
 | `APP_VERSION`  | `0.1.0`                                              | Reported version         |
 | `DEBUG`        | `false`                                              | Debug mode               |
 | `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/ecosignal` | PostgreSQL connection |
+| `UPLOAD_DIR`   | `/app/uploads`                                       | Signal attachment storage |
 
 ---
 
@@ -225,6 +234,36 @@ curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/trucks/
   ]
 }
 ```
+
+### `POST /api/v1/signals`
+
+Create a geolocated signal with title, description, type, and coordinates.
+
+```bash
+curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/signals \
+  -H "ngrok-skip-browser-warning: true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Incendio boschivo",
+    "description": "Fumo visibile dalla strada provinciale SP45, lato nord",
+    "signal_type": "emergenza",
+    "latitude": 45.4642,
+    "longitude": 9.19
+  }'
+```
+
+### `POST /api/v1/signals/{signal_id}/attachments`
+
+Upload one or more images to an existing signal.
+
+```bash
+curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/signals/1/attachments \
+  -H "ngrok-skip-browser-warning: true" \
+  -F "files=@photo1.jpg;type=image/jpeg"
+```
+
+Accepted types: `image/jpeg`, `image/png`, `image/webp`, `image/gif`.
+Maximum 10 files per request, 10 MB per file.
 
 ### `GET /api/v1/trucks/{truck_id}/latest`
 

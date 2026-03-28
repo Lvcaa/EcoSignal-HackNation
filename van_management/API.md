@@ -9,11 +9,12 @@ It covers:
 2. Batch truck updates
 3. Fleet-wide reads
 4. Per-truck polling and history
+5. Citizen/user signals with optional image attachments
 
 ## Overview
 
 - Service name: `van_management`
-- Base route prefix: `/api/v1/trucks`
+- Main route prefixes: `/api/v1/trucks`, `/api/v1/signals`
 - Public base URL: `https://dayana-nonfulminating-novella.ngrok-free.dev`
 - Local base URL: `http://localhost:8000`
 - Public Swagger UI: `https://dayana-nonfulminating-novella.ngrok-free.dev/docs`
@@ -37,7 +38,8 @@ Use these values for every external request:
 - Base URL: `https://dayana-nonfulminating-novella.ngrok-free.dev`
 - Required header: `ngrok-skip-browser-warning: true`
 - Content type for POST requests: `application/json`
-- Route prefix: `/api/v1/trucks`
+- Truck route prefix: `/api/v1/trucks`
+- Signals route prefix: `/api/v1/signals`
 
 Recommended verification flow:
 
@@ -45,7 +47,8 @@ Recommended verification flow:
 2. Call `GET /version`
 3. Call `GET /api/v1/trucks`
 4. Call `GET /api/v1/trucks/{truck_id}/latest`
-5. Call `POST /api/v1/trucks/batch` for bulk ingestion
+5. Call `POST /api/v1/trucks/batch` for bulk truck ingestion
+6. Call `POST /api/v1/signals` to create a signal
 
 Example:
 
@@ -190,6 +193,12 @@ Validation and explicit HTTP errors use FastAPI's standard error format.
 | `GET` | `/api/v1/trucks/{truck_id}/history` | Fetch version history for one truck |
 | `POST` | `/api/v1/trucks/update` | Create a new truck state version |
 | `POST` | `/api/v1/trucks/batch` | Create many truck state versions in one request |
+| `POST` | `/api/v1/signals` | Create a new signal |
+| `GET` | `/api/v1/signals` | List signals |
+| `GET` | `/api/v1/signals/{signal_id}` | Fetch one signal with attachments |
+| `POST` | `/api/v1/signals/{signal_id}/attachments` | Upload one or more signal images |
+| `GET` | `/api/v1/signals/{signal_id}/attachments/{attachment_id}` | Download an attachment |
+| `DELETE` | `/api/v1/signals/{signal_id}` | Delete a signal and its attachments |
 
 ## Meta Endpoints
 
@@ -397,6 +406,15 @@ Typical causes:
 - empty `updates` array on batch ingestion
 - more than 500 updates in one batch
 
+Signals validation:
+
+- `signal_type` must be `emergenza` or `info`
+- signal title must be 1-200 characters
+- signal description must be 1-5000 characters
+- signal attachments accept only `image/jpeg`, `image/png`, `image/webp`, `image/gif`
+- at most 10 files per upload request
+- at most 10 MB per file
+
 ## Public Access Notes
 
 - The public URL is currently served through ngrok free tier
@@ -438,3 +456,33 @@ while True:
 ```
 
 For the fully detailed handoff guide, see `API_REFERENCE.md`.
+
+## Signals Quick Reference
+
+### `POST /api/v1/signals`
+
+Creates a geolocated signal.
+
+```bash
+curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/signals \
+  -H "ngrok-skip-browser-warning: true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Incendio boschivo",
+    "description": "Fumo visibile dalla strada provinciale SP45, lato nord",
+    "signal_type": "emergenza",
+    "latitude": 45.4642,
+    "longitude": 9.19
+  }'
+```
+
+### `POST /api/v1/signals/{signal_id}/attachments`
+
+Uploads one or more images to a signal using `multipart/form-data`.
+
+```bash
+curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/signals/1/attachments \
+  -H "ngrok-skip-browser-warning: true" \
+  -F "files=@photo1.jpg;type=image/jpeg" \
+  -F "files=@photo2.png;type=image/png"
+```

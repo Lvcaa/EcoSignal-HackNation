@@ -748,3 +748,547 @@ while True:
 - The API now exposes both per-truck and fleet-wide latest-state reads.
 - If a fleet-wide snapshot or push stream is needed later, a dedicated endpoint
   or WebSocket/SSE channel would be a natural next step.
+
+---
+
+# Signals API Reference
+
+Signals allow users to report geolocated events such as emergencies or
+informational notices. Each signal has a position, a type, a title, a
+description, and optionally one or more image attachments.
+
+## Signals Overview
+
+- Route prefix: `/api/v1/signals`
+- Signal types: `emergenza`, `info`
+- Attachments: uploaded separately via multipart form data after signal creation
+- Accepted image types: `image/jpeg`, `image/png`, `image/webp`, `image/gif`
+- Max file size: 10 MB per image
+- Max files per upload: 10
+
+## Signals Endpoint Summary
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/api/v1/signals` | Create a new signal |
+| `GET` | `/api/v1/signals` | List all signals (paginated) |
+| `GET` | `/api/v1/signals/{signal_id}` | Get a single signal with attachments |
+| `POST` | `/api/v1/signals/{signal_id}/attachments` | Upload image attachments |
+| `GET` | `/api/v1/signals/{signal_id}/attachments/{attachment_id}` | Download an image |
+| `DELETE` | `/api/v1/signals/{signal_id}` | Delete a signal and its attachments |
+
+## Signals Data Models
+
+### Signal create request
+
+```json
+{
+  "title": "Incendio boschivo",
+  "description": "Fumo visibile dalla strada provinciale SP45, lato nord",
+  "signal_type": "emergenza",
+  "latitude": 45.4642,
+  "longitude": 9.19
+}
+```
+
+### Signal response object
+
+```json
+{
+  "id": 1,
+  "title": "Incendio boschivo",
+  "description": "Fumo visibile dalla strada provinciale SP45, lato nord",
+  "signal_type": "emergenza",
+  "latitude": 45.4642,
+  "longitude": 9.19,
+  "created_at": "2026-03-28T10:15:00Z",
+  "attachments": [
+    {
+      "id": 1,
+      "signal_id": 1,
+      "original_filename": "foto_incendio.jpg",
+      "content_type": "image/jpeg",
+      "file_size": 245000,
+      "created_at": "2026-03-28T10:16:00Z"
+    }
+  ]
+}
+```
+
+### Signal list response
+
+```json
+{
+  "total": 5,
+  "page": 1,
+  "page_size": 50,
+  "signals": [
+    { "...signal object..." }
+  ]
+}
+```
+
+### Attachment response object (from upload)
+
+```json
+{
+  "id": 1,
+  "signal_id": 1,
+  "original_filename": "foto_incendio.jpg",
+  "content_type": "image/jpeg",
+  "file_size": 245000,
+  "created_at": "2026-03-28T10:16:00Z"
+}
+```
+
+### Signals field definitions
+
+| Field | Type | Meaning |
+|---|---|---|
+| `title` | string | Signal title. Max 200 characters. |
+| `description` | string | Signal description. Max 5000 characters. |
+| `signal_type` | enum | One of `emergenza`, `info`. |
+| `latitude` | float | Latitude, from `-90` to `90`. |
+| `longitude` | float | Longitude, from `-180` to `180`. |
+| `id` | integer | Internal database row id. |
+| `created_at` | ISO 8601 datetime | Time the signal was created. |
+| `attachments` | array | List of attachment objects. Empty when no images uploaded. |
+| `original_filename` | string | Original name of the uploaded file. |
+| `content_type` | string | MIME type of the uploaded file. |
+| `file_size` | integer | Size in bytes of the uploaded file. |
+
+## Create Signal
+
+### `POST /api/v1/signals`
+
+Creates a new signal.
+
+Example request:
+
+```bash
+curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/signals \
+  -H "ngrok-skip-browser-warning: true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Incendio boschivo",
+    "description": "Fumo visibile dalla strada provinciale SP45, lato nord",
+    "signal_type": "emergenza",
+    "latitude": 45.4642,
+    "longitude": 9.19
+  }'
+```
+
+Success response:
+
+Status: `201 Created`
+
+```json
+{
+  "success": true,
+  "message": "Signal 1 created",
+  "data": {
+    "id": 1,
+    "title": "Incendio boschivo",
+    "description": "Fumo visibile dalla strada provinciale SP45, lato nord",
+    "signal_type": "emergenza",
+    "latitude": 45.4642,
+    "longitude": 9.19,
+    "created_at": "2026-03-28T10:15:00Z",
+    "attachments": []
+  }
+}
+```
+
+## List Signals
+
+### `GET /api/v1/signals`
+
+Returns all signals ordered by newest first, with pagination.
+
+Query parameters:
+
+| Parameter | Type | Default | Notes |
+|---|---|---|---|
+| `page` | integer | `1` | Must be `>= 1` |
+| `page_size` | integer | `50` | Must be between `1` and `200` |
+
+Example request:
+
+```bash
+curl https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/signals \
+  -H "ngrok-skip-browser-warning: true"
+```
+
+Success response:
+
+Status: `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "Found 2 signal(s)",
+  "data": {
+    "total": 2,
+    "page": 1,
+    "page_size": 50,
+    "signals": [
+      {
+        "id": 2,
+        "title": "Cassonetto pieno",
+        "description": "Cassonetto organico stracolmo in via Roma 12",
+        "signal_type": "info",
+        "latitude": 45.47,
+        "longitude": 9.2,
+        "created_at": "2026-03-28T10:20:00Z",
+        "attachments": []
+      },
+      {
+        "id": 1,
+        "title": "Incendio boschivo",
+        "description": "Fumo visibile dalla strada provinciale SP45, lato nord",
+        "signal_type": "emergenza",
+        "latitude": 45.4642,
+        "longitude": 9.19,
+        "created_at": "2026-03-28T10:15:00Z",
+        "attachments": []
+      }
+    ]
+  }
+}
+```
+
+Behavior:
+
+- Returns `200 OK` with `total: 0` and empty `signals` list when no signals
+  exist yet.
+- Returns newest signals first.
+
+## Get Single Signal
+
+### `GET /api/v1/signals/{signal_id}`
+
+Returns a signal with its attachment metadata.
+
+Example request:
+
+```bash
+curl https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/signals/1 \
+  -H "ngrok-skip-browser-warning: true"
+```
+
+Success response:
+
+Status: `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "Signal 1",
+  "data": {
+    "id": 1,
+    "title": "Incendio boschivo",
+    "description": "Fumo visibile dalla strada provinciale SP45, lato nord",
+    "signal_type": "emergenza",
+    "latitude": 45.4642,
+    "longitude": 9.19,
+    "created_at": "2026-03-28T10:15:00Z",
+    "attachments": [
+      {
+        "id": 1,
+        "signal_id": 1,
+        "original_filename": "foto_incendio.jpg",
+        "content_type": "image/jpeg",
+        "file_size": 245000,
+        "created_at": "2026-03-28T10:16:00Z"
+      }
+    ]
+  }
+}
+```
+
+Not found response:
+
+Status: `404 Not Found`
+
+```json
+{
+  "detail": "Signal 99 not found"
+}
+```
+
+## Upload Attachments
+
+### `POST /api/v1/signals/{signal_id}/attachments`
+
+Upload one or more image files to an existing signal.
+
+**Important:** This endpoint uses `multipart/form-data`, not JSON.
+
+Constraints:
+
+- Accepted MIME types: `image/jpeg`, `image/png`, `image/webp`, `image/gif`
+- Maximum file size: 10 MB per file
+- Maximum files per request: 10
+
+Example request:
+
+```bash
+curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/signals/1/attachments \
+  -H "ngrok-skip-browser-warning: true" \
+  -F "files=@foto_incendio.jpg;type=image/jpeg" \
+  -F "files=@foto_dettaglio.png;type=image/png"
+```
+
+Success response:
+
+Status: `201 Created`
+
+```json
+{
+  "success": true,
+  "message": "2 attachment(s) uploaded to signal 1",
+  "data": [
+    {
+      "id": 1,
+      "signal_id": 1,
+      "original_filename": "foto_incendio.jpg",
+      "content_type": "image/jpeg",
+      "file_size": 245000,
+      "created_at": "2026-03-28T10:16:00Z"
+    },
+    {
+      "id": 2,
+      "signal_id": 1,
+      "original_filename": "foto_dettaglio.png",
+      "content_type": "image/png",
+      "file_size": 189000,
+      "created_at": "2026-03-28T10:16:00Z"
+    }
+  ]
+}
+```
+
+Error responses:
+
+- `404 Not Found` — signal does not exist
+- `400 Bad Request` — invalid content type or file too large
+
+Example `400`:
+
+```json
+{
+  "detail": "File 'document.pdf': content type 'application/pdf' not allowed. Accepted: image/gif, image/jpeg, image/png, image/webp"
+}
+```
+
+## Download Attachment
+
+### `GET /api/v1/signals/{signal_id}/attachments/{attachment_id}`
+
+Returns the image file as a binary download.
+
+Example request:
+
+```bash
+curl https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/signals/1/attachments/1 \
+  -H "ngrok-skip-browser-warning: true" \
+  --output foto_incendio.jpg
+```
+
+Success response:
+
+Status: `200 OK`
+
+The response body is the raw image file. The `Content-Type` header matches the
+original upload MIME type. The `Content-Disposition` header contains the
+original filename.
+
+Not found response:
+
+Status: `404 Not Found`
+
+```json
+{
+  "detail": "Attachment 99 not found for signal 1"
+}
+```
+
+## Delete Signal
+
+### `DELETE /api/v1/signals/{signal_id}`
+
+Deletes a signal and all its attachments (both database records and files on
+disk).
+
+Example request:
+
+```bash
+curl -X DELETE https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/signals/1 \
+  -H "ngrok-skip-browser-warning: true"
+```
+
+Success response:
+
+Status: `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "Signal 1 deleted",
+  "data": null
+}
+```
+
+Not found response:
+
+Status: `404 Not Found`
+
+```json
+{
+  "detail": "Signal 1 not found"
+}
+```
+
+## Signals Integration Example
+
+Complete flow: create a signal, upload images, then retrieve it.
+
+### Step 1 — Create the signal
+
+```bash
+curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/signals \
+  -H "ngrok-skip-browser-warning: true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Discarica abusiva",
+    "description": "Rifiuti abbandonati nel parcheggio di via Verdi",
+    "signal_type": "emergenza",
+    "latitude": 45.4642,
+    "longitude": 9.19
+  }'
+```
+
+Save the returned `id` (e.g., `3`).
+
+### Step 2 — Upload images
+
+```bash
+curl -X POST https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/signals/3/attachments \
+  -H "ngrok-skip-browser-warning: true" \
+  -F "files=@foto1.jpg;type=image/jpeg" \
+  -F "files=@foto2.jpg;type=image/jpeg"
+```
+
+### Step 3 — Retrieve the signal with attachments
+
+```bash
+curl https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/signals/3 \
+  -H "ngrok-skip-browser-warning: true"
+```
+
+### JavaScript upload example
+
+```js
+const BASE_URL = "https://dayana-nonfulminating-novella.ngrok-free.dev";
+const HEADERS = { "ngrok-skip-browser-warning": "true" };
+
+// Step 1: create signal
+const signalResp = await fetch(`${BASE_URL}/api/v1/signals`, {
+  method: "POST",
+  headers: { ...HEADERS, "Content-Type": "application/json" },
+  body: JSON.stringify({
+    title: "Discarica abusiva",
+    description: "Rifiuti abbandonati nel parcheggio",
+    signal_type: "emergenza",
+    latitude: 45.4642,
+    longitude: 9.19,
+  }),
+});
+const { data: signal } = await signalResp.json();
+
+// Step 2: upload images
+const formData = new FormData();
+formData.append("files", imageFile1); // File or Blob
+formData.append("files", imageFile2);
+
+const uploadResp = await fetch(
+  `${BASE_URL}/api/v1/signals/${signal.id}/attachments`,
+  { method: "POST", headers: HEADERS, body: formData }
+);
+const { data: attachments } = await uploadResp.json();
+console.log("Uploaded", attachments.length, "image(s)");
+
+// Step 3: download an image
+const imgResp = await fetch(
+  `${BASE_URL}/api/v1/signals/${signal.id}/attachments/${attachments[0].id}`,
+  { headers: HEADERS }
+);
+const blob = await imgResp.blob();
+const imgUrl = URL.createObjectURL(blob);
+```
+
+### Python upload example
+
+```python
+import httpx
+
+BASE_URL = "https://dayana-nonfulminating-novella.ngrok-free.dev"
+HEADERS = {"ngrok-skip-browser-warning": "true"}
+
+with httpx.Client(headers=HEADERS) as client:
+    # Step 1: create signal
+    signal_resp = client.post(
+        f"{BASE_URL}/api/v1/signals",
+        json={
+            "title": "Discarica abusiva",
+            "description": "Rifiuti abbandonati nel parcheggio",
+            "signal_type": "emergenza",
+            "latitude": 45.4642,
+            "longitude": 9.19,
+        },
+    )
+    signal_id = signal_resp.json()["data"]["id"]
+
+    # Step 2: upload images
+    with open("foto1.jpg", "rb") as f1, open("foto2.jpg", "rb") as f2:
+        upload_resp = client.post(
+            f"{BASE_URL}/api/v1/signals/{signal_id}/attachments",
+            files=[
+                ("files", ("foto1.jpg", f1, "image/jpeg")),
+                ("files", ("foto2.jpg", f2, "image/jpeg")),
+            ],
+        )
+    print("Uploaded:", upload_resp.json()["data"])
+
+    # Step 3: download an image
+    att_id = upload_resp.json()["data"][0]["id"]
+    img_resp = client.get(
+        f"{BASE_URL}/api/v1/signals/{signal_id}/attachments/{att_id}"
+    )
+    with open("downloaded.jpg", "wb") as out:
+        out.write(img_resp.content)
+```
+
+## Signals Error Handling
+
+### `404 Not Found`
+
+Returned when the requested signal or attachment does not exist.
+
+### `400 Bad Request`
+
+Returned when an attachment upload fails validation:
+
+- File content type not in the accepted list
+- File exceeds the 10 MB size limit
+- More than 10 files in one upload request
+
+### `422 Unprocessable Entity`
+
+Returned when the signal creation payload fails validation:
+
+- Invalid `signal_type` (must be `emergenza` or `info`)
+- Latitude outside `-90..90`
+- Longitude outside `-180..180`
+- Missing or empty `title`
+- Missing or empty `description`
