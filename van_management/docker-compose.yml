@@ -1,0 +1,40 @@
+services:
+  van_management:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/ecosignal
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ecosignal
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      backend:
+        aliases:
+          - db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
+
+networks:
+  backend:
+    name: van_management_backend

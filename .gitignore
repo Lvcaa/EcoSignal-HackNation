@@ -1,0 +1,7 @@
+.claude/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+van_management/.env
