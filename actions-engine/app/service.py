@@ -13,13 +13,34 @@ from app.schemas import (
     ActionLogResponse,
     ActionSuggestion,
     ActionType,
+    ApplianceCO2Breakdown,
     DailyActionsResponse,
+    DishwasherMode,
     EffortLevel,
+    WashingMachineTemp,
     WeeklySummaryEntry,
     WeeklySummaryResponse,
+    WeeklySurveyRequest,
+    WeeklySurveyResponse,
 )
 
 ROME_TZ = ZoneInfo("Europe/Rome")
+
+# ── Appliance CO2 factors (kg CO₂e per cycle) ────────────
+# Duplicated from footprint-engine to avoid cross-service imports.
+
+WASHING_MACHINE_CO2: dict[str, float] = {
+    "cold": 0.3,
+    "warm": 0.6,
+    "hot": 1.0,
+    "very_hot": 1.5,
+}
+
+DISHWASHER_CO2: dict[str, float] = {
+    "eco": 0.4,
+    "normal": 0.7,
+    "intensive": 1.1,
+}
 
 EFFORT_COST: dict[EffortLevel, float] = {
     EffortLevel.easy: 1.0,
@@ -115,6 +136,47 @@ def build_daily_response(
         date=target_date.isoformat(),
         actions=actions,
         total_co2_delta_kg=round(total, 4),
+    )
+
+
+# ── Weekly Survey helpers ──────────────────────────────────
+
+
+def calculate_appliance_co2(req: WeeklySurveyRequest) -> ApplianceCO2Breakdown:
+    """Calculate CO2 breakdown for weekly appliance survey."""
+    wm_kg = round(
+        req.washing_machine_cycles * WASHING_MACHINE_CO2[req.washing_machine_temp.value],
+        4,
+    )
+    dw_kg = round(
+        req.dishwasher_cycles * DISHWASHER_CO2[req.dishwasher_mode.value],
+        4,
+    )
+    return ApplianceCO2Breakdown(
+        washing_machine_kg=wm_kg,
+        dishwasher_kg=dw_kg,
+        total_kg=round(wm_kg + dw_kg, 4),
+    )
+
+
+def build_survey_response(log: ActionLog) -> WeeklySurveyResponse:
+    """Build a WeeklySurveyResponse from an ActionLog with appliance metadata."""
+    meta = log.metadata_json or {}
+    co2 = meta.get("co2_breakdown", {})
+    return WeeklySurveyResponse(
+        id=log.id,
+        user_id=log.user_id,
+        washing_machine_cycles=meta.get("washing_machine_cycles", 0),
+        washing_machine_temp=WashingMachineTemp(meta.get("washing_machine_temp", "warm")),
+        dishwasher_cycles=meta.get("dishwasher_cycles", 0),
+        dishwasher_mode=DishwasherMode(meta.get("dishwasher_mode", "normal")),
+        week_start=meta.get("week_start", ""),
+        co2_breakdown=ApplianceCO2Breakdown(
+            washing_machine_kg=co2.get("washing_machine_kg", 0),
+            dishwasher_kg=co2.get("dishwasher_kg", 0),
+            total_kg=co2.get("total_kg", 0),
+        ),
+        created_at=log.created_at,
     )
 
 

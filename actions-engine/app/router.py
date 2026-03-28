@@ -22,10 +22,14 @@ from app.schemas import (
     LogActionRequest,
     StreakResponse,
     WeeklySummaryResponse,
+    WeeklySurveyRequest,
+    WeeklySurveyResponse,
 )
 from app.service import (
     build_daily_response,
+    build_survey_response,
     build_weekly_summary,
+    calculate_appliance_co2,
     compute_streak,
     get_encouragement_message,
     rank_actions,
@@ -176,3 +180,59 @@ async def get_weekly_summary(
     uid = str(user_id)
     logs = await repo.get_actions_by_date_range(uid, start_of_week, end_of_week)
     return build_weekly_summary(logs, start_of_week, end_of_week)
+
+
+# ── Weekly Survey endpoints ──────────────────────────────
+
+
+@router.post("/weekly-survey", response_model=WeeklySurveyResponse)
+async def submit_weekly_survey(
+    body: WeeklySurveyRequest,
+    repo: RepoDep,
+) -> WeeklySurveyResponse:
+    """Submit weekly appliance survey and calculate CO2."""
+    now_rome = datetime.now(tz=ROME_TZ)
+    uid = str(body.user_id)
+
+    co2 = calculate_appliance_co2(body)
+
+    log = await repo.create_action_log(
+        user_id=uid,
+        action_type="appliance",
+        co2_delta_kg=co2.total_kg,
+        description=f"Questionario settimanale elettrodomestici ({body.week_start})",
+        metadata_json={
+            "washing_machine_cycles": body.washing_machine_cycles,
+            "washing_machine_temp": body.washing_machine_temp.value,
+            "dishwasher_cycles": body.dishwasher_cycles,
+            "dishwasher_mode": body.dishwasher_mode.value,
+            "week_start": body.week_start.isoformat(),
+            "co2_breakdown": co2.model_dump(),
+        },
+        created_at=now_rome,
+    )
+
+    return build_survey_response(log)
+
+
+@router.get(
+    "/weekly-survey/latest",
+    response_model=WeeklySurveyResponse | None,
+)
+async def get_latest_survey(
+    user_id: UserIdQuery,
+    repo: RepoDep,
+) -> WeeklySurveyResponse | None:
+    """Return the most recent weekly appliance survey for a user."""
+    uid = str(user_id)
+    # Get recent appliance logs (last 30 days should cover it)
+    today_rome = datetime.now(tz=ROME_TZ).date()
+    start = today_rome - timedelta(days=30)
+    logs = await repo.get_actions_by_date_range(uid, start, today_rome)
+    appliance_logs = [l for l in logs if l.action_type == "appliance"]
+
+    if not appliance_logs:
+        return None
+
+    # logs are already sorted by created_at desc
+    return build_survey_response(appliance_logs[0])

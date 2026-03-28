@@ -108,6 +108,27 @@ EMISSION_FACTOR_PET_WEEKLY: dict[PetType, float] = {
 }
 
 
+# ── Appliance emission factors (kg CO₂e per cycle) ────────────────
+# Based on EU Energy Label data with Italian grid mix (~0.25 kg CO₂/kWh).
+# Source: EU Commission Delegated Regulation 2019/2014 (washing machines),
+# 2019/2022 (dishwashers); ISPRA grid emission factor 2023.
+
+WASHING_MACHINE_PER_CYCLE_KG: dict[str, float] = {
+    "cold": 0.3,        # 30°C — minimal heating, ~1.2 kWh
+    "warm": 0.6,        # 40°C — moderate heating, ~2.4 kWh
+    "hot": 1.0,         # 60°C — full heating, ~4.0 kWh
+    "very_hot": 1.5,    # 90°C — sanitize cycle, ~6.0 kWh
+}
+
+DISHWASHER_PER_CYCLE_KG: dict[str, float] = {
+    "eco": 0.4,         # eco programme, ~1.6 kWh
+    "normal": 0.7,      # standard programme, ~2.8 kWh
+    "intensive": 1.1,   # intensive/heavy programme, ~4.4 kWh
+}
+
+DRYER_PER_CYCLE_KG: float = 2.0  # condenser dryer, ~8.0 kWh per cycle
+
+
 LABEL_THRESHOLD_LOW: float = 0.60
 LABEL_THRESHOLD_AVERAGE: float = 1.10
 LABEL_THRESHOLD_HIGH: float = 1.50

@@ -118,6 +118,51 @@ class DailyActionsResponse(BaseModel):
     total_co2_delta_kg: float
 
 
+# ── Weekly Survey schemas ─────────────────────────────────
+
+
+class WashingMachineTemp(StrEnum):
+    cold = "cold"           # 30°C
+    warm = "warm"           # 40°C
+    hot = "hot"             # 60°C
+    very_hot = "very_hot"   # 90°C
+
+
+class DishwasherMode(StrEnum):
+    eco = "eco"
+    normal = "normal"
+    intensive = "intensive"
+
+
+class WeeklySurveyRequest(BaseModel):
+    user_id: UUID
+    washing_machine_cycles: int = Field(ge=0, le=14)
+    washing_machine_temp: WashingMachineTemp = WashingMachineTemp.warm
+    dishwasher_cycles: int = Field(ge=0, le=14)
+    dishwasher_mode: DishwasherMode = DishwasherMode.normal
+    week_start: date
+
+
+class ApplianceCO2Breakdown(BaseModel):
+    washing_machine_kg: float
+    dishwasher_kg: float
+    total_kg: float
+
+
+class WeeklySurveyResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    user_id: str
+    washing_machine_cycles: int
+    washing_machine_temp: WashingMachineTemp
+    dishwasher_cycles: int
+    dishwasher_mode: DishwasherMode
+    week_start: str
+    co2_breakdown: ApplianceCO2Breakdown
+    created_at: datetime
+
+
 class WeeklySummaryEntry(BaseModel):
     action_type: ActionType
     count: int
