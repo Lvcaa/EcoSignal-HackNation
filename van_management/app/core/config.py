@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/ecosignal"
+    UPLOAD_DIR: str = "/app/uploads"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
