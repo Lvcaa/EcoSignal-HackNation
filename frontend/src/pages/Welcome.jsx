@@ -10,19 +10,18 @@ export default function Welcome() {
       <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-secondary-fixed/20 rounded-full blur-3xl" />
 
       <header className="flex items-center justify-between px-5 py-4 relative z-10">
-        <span className="text-primary font-extrabold text-lg italic">Green Buddy</span>
+        <div className="flex items-center gap-2">
+          <img src="/green-buddy-logo.png" alt="Green Buddy" className="w-7 h-7 rounded-lg object-cover" />
+          <span className="text-primary font-extrabold text-lg italic">Green Buddy</span>
+        </div>
         <button onClick={() => navigate('/login')} className="text-on-surface/50">
           <span className="material-symbols-outlined">close</span>
         </button>
       </header>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
-        {/* Leaf icon */}
-        <div className="w-20 h-20 bg-primary rounded-3xl flex items-center justify-center mb-8 shadow-card-lg">
-          <span className="material-symbols-outlined text-on-primary text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>
-            eco
-          </span>
-        </div>
+        {/* Mascot logo */}
+        <img src="/green-buddy-logo.png" alt="Green Buddy" className="w-28 h-28 rounded-3xl object-cover mb-8 shadow-card-lg" />
 
         <h1 className="text-4xl font-black text-primary text-center leading-tight mb-3">
           Green Buddy
