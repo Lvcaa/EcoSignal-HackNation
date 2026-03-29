@@ -74,7 +74,7 @@ export default function Dashboard() {
       {showAddressFix && <AddressFixDialog onClose={() => setShowAddressFix(false)} />}
 
       {/* Air Alert */}
-      <AirAlertBanner data={airQuality.data} />
+      <AirAlertBanner data={airQuality.data ?? { aqi_label: 'good', pm25: null, city: '' }} />
 
       {/* CO2 Comparison Card */}
       <section className="px-4 mt-6">

@@ -1,5 +1,5 @@
 const levelConfig = {
-  good: null,
+  good: { bg: 'bg-green-50', border: 'border-green-200', icon: 'eco', iconColor: 'text-green-500' },
   moderate: { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'warning', iconColor: 'text-amber-500' },
   unhealthy: { bg: 'bg-amber-50', border: 'border-amber-200', icon: 'warning', iconColor: 'text-amber-500' },
   hazardous: { bg: 'bg-red-50', border: 'border-red-300', icon: 'dangerous', iconColor: 'text-red-500' },
@@ -20,11 +20,12 @@ export default function AirAlertBanner({ data }) {
           </span>
         </div>
         <div className="flex-1">
-          <p className="text-xs font-bold text-red-700 uppercase tracking-wider mb-1">Local Air Alert</p>
-          <p className="text-sm text-on-surface">
-            Today in {data.city}: PM2.5 {data.pm25?.toFixed(0) ?? '—'} &mu;g/m&sup3; — above WHO threshold
+          <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${label === 'good' ? 'text-green-700' : 'text-red-700'}`}>
+            {label === 'good' ? 'Local Air Quality' : 'Local Air Alert'}
           </p>
-          <p className="text-xs text-secondary mt-1 font-medium">What does this mean for me? &rarr;</p>
+          <p className="text-sm text-on-surface">
+            Today in {data.city}: PM2.5 {data.pm25?.toFixed(0) ?? '—'} &mu;g/m&sup3;{label !== 'good' ? ' — above WHO threshold' : ''}
+          </p>
         </div>
       </div>
     </div>
