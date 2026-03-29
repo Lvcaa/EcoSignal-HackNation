@@ -1,46 +1,75 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
+import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api'
 import ProgressDots from '../../components/onboarding/ProgressDots'
 
-const ZIP_MAP = {
-  '00100': { city: 'Roma', region: 'Lazio' },
-  '20100': { city: 'Milano', region: 'Lombardia' },
-  '25100': { city: 'Brescia', region: 'Lombardia' },
-  '24100': { city: 'Bergamo', region: 'Lombardia' },
-  '80100': { city: 'Napoli', region: 'Campania' },
-  '84100': { city: 'Salerno', region: 'Campania' },
-  '90100': { city: 'Palermo', region: 'Sicilia' },
-  '95100': { city: 'Catania', region: 'Sicilia' },
-  '30100': { city: 'Venezia', region: 'Veneto' },
-  '37100': { city: 'Verona', region: 'Veneto' },
-  '35100': { city: 'Padova', region: 'Veneto' },
-  '10100': { city: 'Torino', region: 'Piemonte' },
-  '40100': { city: 'Bologna', region: 'Emilia-Romagna' },
-  '43100': { city: 'Parma', region: 'Emilia-Romagna' },
-  '70100': { city: 'Bari', region: 'Puglia' },
-  '50100': { city: 'Firenze', region: 'Toscana' },
-  '56100': { city: 'Pisa', region: 'Toscana' },
-  '88100': { city: 'Catanzaro', region: 'Calabria' },
-  '89100': { city: 'Reggio Calabria', region: 'Calabria' },
-  '09100': { city: 'Cagliari', region: 'Sardegna' },
-  '16100': { city: 'Genova', region: 'Liguria' },
-  '60100': { city: 'Ancona', region: 'Marche' },
-  '67100': { city: "L'Aquila", region: 'Abruzzo' },
-  '65100': { city: 'Pescara', region: 'Abruzzo' },
-  '38100': { city: 'Trento', region: 'Trentino-Alto Adige' },
-  '39100': { city: 'Bolzano', region: 'Trentino-Alto Adige' },
-  '34100': { city: 'Trieste', region: 'Friuli Venezia Giulia' },
-  '06100': { city: 'Perugia', region: 'Umbria' },
-  '85100': { city: 'Potenza', region: 'Basilicata' },
-  '86100': { city: 'Campobasso', region: 'Molise' },
-  '11100': { city: 'Aosta', region: "Valle d'Aosta" },
-}
+const LIBRARIES = ['places']
+const MAP_CONTAINER = { width: '100%', height: '100%', borderRadius: '1rem' }
+const ITALY_CENTER = { lat: 41.9, lng: 12.5 }
 
 export default function ZipStep() {
   const navigate = useNavigate()
   const { data, updateData } = useOutletContext()
-  const [zip, setZip] = useState(data.zip_code)
-  const match = ZIP_MAP[zip]
+  const [address, setAddress] = useState(data.address || '')
+  const [zip, setZip] = useState(data.zip_code || '')
+  const [position, setPosition] = useState(
+    data.latitude ? { lat: data.latitude, lng: data.longitude } : null
+  )
+  const [city, setCity] = useState('')
+  const inputRef = useRef(null)
+  const autocompleteRef = useRef(null)
+
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
+    libraries: LIBRARIES,
+  })
+
+  const onMapLoad = useCallback(() => {}, [])
+
+  const onAutocompleteMount = useCallback((node) => {
+    if (!node || autocompleteRef.current) return
+    inputRef.current = node
+
+    const ac = new window.google.maps.places.Autocomplete(node, {
+      componentRestrictions: { country: 'it' },
+      fields: ['address_components', 'formatted_address', 'geometry'],
+      types: ['address'],
+    })
+
+    ac.addListener('place_changed', () => {
+      const place = ac.getPlace()
+      if (!place.geometry) return
+
+      const lat = place.geometry.location.lat()
+      const lng = place.geometry.location.lng()
+      setPosition({ lat, lng })
+      setAddress(place.formatted_address || '')
+
+      let postalCode = ''
+      let cityName = ''
+      for (const comp of place.address_components || []) {
+        if (comp.types.includes('postal_code')) postalCode = comp.long_name
+        if (comp.types.includes('locality')) cityName = comp.long_name
+        if (!cityName && comp.types.includes('administrative_area_level_3')) cityName = comp.long_name
+      }
+      if (postalCode) setZip(postalCode)
+      if (cityName) setCity(cityName)
+    })
+
+    autocompleteRef.current = ac
+  }, [])
+
+  const hasLocation = position && zip
+
+  const handleNext = () => {
+    updateData({
+      zip_code: zip,
+      address,
+      latitude: position?.lat || null,
+      longitude: position?.lng || null,
+    })
+    navigate('/onboarding/transport')
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -57,36 +86,63 @@ export default function ZipStep() {
 
       <h3 className="text-lg font-black text-on-surface mb-1">Dove vivi?</h3>
       <p className="text-xs text-on-surface/50 mb-4">
-        Il tuo CAP ci aiuta a mappare la qualit&agrave; dell&apos;aria e le iniziative green nel tuo quartiere.
+        Il tuo indirizzo ci aiuta a mappare la qualit&agrave; dell&apos;aria e le iniziative green nel tuo quartiere.
       </p>
 
+      {/* Address input with autocomplete */}
       <label className="text-[10px] font-bold text-on-surface/50 uppercase tracking-wider mb-1.5">
-        Codice Postale (CAP)
+        Indirizzo
       </label>
-      <input
-        type="text"
-        inputMode="numeric"
-        maxLength={5}
-        value={zip}
-        onChange={(e) => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
-        placeholder="es. 20121"
-        className="w-full px-4 py-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/40 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-lg font-medium tracking-wider"
-      />
+      {isLoaded ? (
+        <input
+          ref={onAutocompleteMount}
+          type="text"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="es. Via Roma 1, Milano"
+          className="w-full px-4 py-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/40 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm font-medium"
+        />
+      ) : (
+        <div className="w-full px-4 py-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/40 text-sm text-on-surface/40">
+          Caricamento mappa...
+        </div>
+      )}
 
-      {match && (
+      {/* Location confirmation */}
+      {hasLocation && (
         <div className="flex items-center gap-3 mt-3 p-3 rounded-2xl bg-surface-container-low">
           <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>
             location_on
           </span>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-on-surface">{match.city}, {match.region}</p>
+            <p className="text-sm font-semibold text-on-surface">{city || 'Posizione trovata'}</p>
+            <p className="text-xs text-on-surface/50">CAP {zip}</p>
           </div>
-          <button
-            onClick={() => updateData({ zip_code: zip })}
-            className="text-primary text-sm font-bold"
+          <span className="material-symbols-outlined text-primary text-lg">check_circle</span>
+        </div>
+      )}
+
+      {/* Map preview */}
+      {isLoaded && (
+        <div className="mt-4 rounded-2xl overflow-hidden h-44 bg-surface-container-low">
+          <GoogleMap
+            mapContainerStyle={MAP_CONTAINER}
+            center={position || ITALY_CENTER}
+            zoom={position ? 16 : 5}
+            onLoad={onMapLoad}
+            options={{
+              disableDefaultUI: true,
+              zoomControl: true,
+              mapTypeControl: false,
+              streetViewControl: false,
+              styles: [
+                { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+                { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+              ],
+            }}
           >
-            Conferma
-          </button>
+            {position && <MarkerF position={position} />}
+          </GoogleMap>
         </div>
       )}
 
@@ -95,10 +151,7 @@ export default function ZipStep() {
           Salta
         </button>
         <button
-          onClick={() => {
-            updateData({ zip_code: zip })
-            navigate('/onboarding/transport')
-          }}
+          onClick={handleNext}
           disabled={!zip || zip.length < 5}
           className="bg-primary text-on-primary font-bold px-8 py-3 rounded-2xl active:scale-95 transition-all ease-out-expo disabled:opacity-40 flex items-center gap-2"
         >

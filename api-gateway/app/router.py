@@ -17,8 +17,9 @@ async def _proxy(
     json: Any | None = None,
     params: dict[str, Any] | None = None,
     headers: dict[str, str] | None = None,
+    timeout: float = 10.0,
 ) -> Any:
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    async with httpx.AsyncClient(timeout=timeout) as client:
         response = await client.request(method, url, json=json, params=params, headers=headers)
     if response.status_code >= 400:
         raise HTTPException(status_code=response.status_code, detail=response.json().get("detail", "Downstream error"))
@@ -83,6 +84,43 @@ async def refresh(
         "POST",
         f"{settings.user_profile_service_url}/api/v1/auth/refresh",
         json=body,
+    )
+
+
+@auth_router.get(
+    "/users",
+    responses={401: {"model": ErrorResponse}},
+)
+async def list_users(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=200),
+    token: TokenPayload = Depends(verify_token),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    """List all users (demo/pitch only)."""
+    return await _proxy(
+        "GET",
+        f"{settings.user_profile_service_url}/api/v1/auth/users",
+        params={"limit": limit},
+        headers=_auth_headers(request),
+    )
+
+
+@auth_router.post(
+    "/impersonate/{user_id}",
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
+)
+async def impersonate(
+    request: Request,
+    user_id: str,
+    token: TokenPayload = Depends(verify_token),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    """Issue a token for any user by ID (demo/pitch only)."""
+    return await _proxy(
+        "POST",
+        f"{settings.user_profile_service_url}/api/v1/auth/impersonate/{user_id}",
+        headers=_auth_headers(request),
     )
 
 
@@ -272,6 +310,7 @@ async def get_narrative(
         f"{settings.ai_narrative_service_url}/api/v1/narrative",
         params={"user_id": token.sub},
         headers=_auth_headers(request),
+        timeout=60.0,  # LLM narrative generation needs more time
     )
 
 
@@ -292,6 +331,23 @@ async def get_actions(
     return await _proxy(
         "GET",
         f"{settings.actions_service_url}/api/v1/actions",
+        params={"user_id": token.sub},
+        headers=_auth_headers(request),
+    )
+
+
+@actions_router.get(
+    "/streak",
+    responses={401: {"model": ErrorResponse}},
+)
+async def get_streak(
+    request: Request,
+    token: TokenPayload = Depends(verify_token),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    return await _proxy(
+        "GET",
+        f"{settings.actions_service_url}/api/v1/actions/streak",
         params={"user_id": token.sub},
         headers=_auth_headers(request),
     )
@@ -329,6 +385,23 @@ async def get_daily_actions(
         "GET",
         f"{settings.actions_service_url}/api/v1/actions/daily",
         params={"user_id": token.sub, "date": date},
+        headers=_auth_headers(request),
+    )
+
+
+@actions_router.get(
+    "/monthly",
+    responses={401: {"model": ErrorResponse}},
+)
+async def get_monthly_summary(
+    request: Request,
+    token: TokenPayload = Depends(verify_token),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    return await _proxy(
+        "GET",
+        f"{settings.actions_service_url}/api/v1/actions/monthly",
+        params={"user_id": token.sub},
         headers=_auth_headers(request),
     )
 
@@ -403,6 +476,29 @@ async def complete_action(
     )
 
 
+# ── Chat Onboarding Router (no auth — pre-registration) ───
+
+chat_router = APIRouter(prefix="/chat", tags=["chat"])
+
+
+@chat_router.post(
+    "/onboarding",
+    responses={422: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+)
+@limiter.limit("30/minute")
+async def chat_onboarding(
+    request: Request,
+    body: dict[str, Any],
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    return await _proxy(
+        "POST",
+        f"{settings.ai_narrative_service_url}/chat/onboarding",
+        json=body,
+        timeout=60.0,
+    )
+
+
 # ── Community Router ───────────────────────────────────────
 
 community_router = APIRouter(prefix="/community", tags=["community"])
@@ -421,6 +517,51 @@ async def get_community_stats(
         "GET",
         f"{settings.community_service_url}/api/v1/community/stats",
         params={"user_id": token.sub},
+        headers=_auth_headers(request),
+    )
+
+
+@community_router.get(
+    "/leaderboard",
+    responses={401: {"model": ErrorResponse}},
+)
+async def get_leaderboard(
+    request: Request,
+    zip_code: str | None = Query(None),
+    limit: int = Query(default=50, ge=1, le=100),
+    token: TokenPayload = Depends(verify_token),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    params: dict[str, Any] = {"limit": limit}
+    if zip_code:
+        params["zip_code"] = zip_code
+    return await _proxy(
+        "GET",
+        f"{settings.community_service_url}/api/v1/community/leaderboard",
+        params=params,
+        headers=_auth_headers(request),
+    )
+
+
+@community_router.get(
+    "/user/{target_user_id}/actions",
+    responses={401: {"model": ErrorResponse}},
+)
+async def get_user_actions(
+    request: Request,
+    target_user_id: str,
+    date: str = Query(None),
+    token: TokenPayload = Depends(verify_token),
+    settings: Settings = Depends(get_settings),
+) -> Any:
+    """Get a user's daily actions (public community view)."""
+    params: dict[str, Any] = {"user_id": target_user_id}
+    if date:
+        params["date"] = date
+    return await _proxy(
+        "GET",
+        f"{settings.actions_service_url}/api/v1/actions/daily",
+        params=params,
         headers=_auth_headers(request),
     )
 
@@ -463,6 +604,7 @@ async def analyze_image(
         f"{settings.image_analyzer_service_url}/api/v1/analyze",
         json={**body, "user_id": token.sub},
         headers=_auth_headers(request),
+        timeout=60.0,  # Claude Vision needs more time for image analysis
     )
 
 
@@ -470,5 +612,5 @@ async def analyze_image(
 # With `from __future__ import annotations`, string annotations can't resolve
 # types like RegisterRequest in slowapi's namespace. Inject them explicitly.
 _module_types = {k: v for k, v in globals().items() if not k.startswith("_")}
-for _fn in (register, login, get_narrative, analyze_image):
+for _fn in (register, login, get_narrative, analyze_image, chat_onboarding):
     _fn.__globals__.update(_module_types)

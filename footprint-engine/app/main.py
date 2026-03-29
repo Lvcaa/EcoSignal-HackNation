@@ -1,18 +1,30 @@
 """FastAPI application for EcoSignal Footprint Engine."""
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
+from app.climatiq import ClimatiqClient
 from app.config import get_settings
+from app.factors import load_factors
 from app.schemas import FootprintRequest, FootprintResult
 from app.service import calculate_footprint
 
 settings = get_settings()
 logging.basicConfig(level=settings.log_level)
 
-app = FastAPI(title="EcoSignal Footprint Engine")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Load Climatiq factors on startup."""
+    client = ClimatiqClient(api_key=settings.climatiq_api_key)
+    await load_factors(client)
+    yield
+
+
+app = FastAPI(title="EcoSignal Footprint Engine", lifespan=lifespan)
 
 router = APIRouter(prefix="/api/v1/footprint")
 

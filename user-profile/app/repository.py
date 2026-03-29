@@ -32,6 +32,12 @@ class UserRepository:
         await self.session.refresh(user)
         return user
 
+    async def list_users(self, limit: int = 50) -> list[User]:
+        result = await self.session.execute(
+            select(User).order_by(User.display_name).limit(limit)
+        )
+        return list(result.scalars().all())
+
     async def get_by_email(self, email: str) -> User | None:
         result = await self.session.execute(
             select(User).where(User.email == email)

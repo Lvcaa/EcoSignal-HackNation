@@ -53,6 +53,7 @@ async def upsert_user_footprint_ref(
     user_id: UUID,
     zip_code: str,
     kg: float,
+    display_name: str | None = None,
 ) -> None:
     """Insert or update the user's footprint reference."""
     uid = str(user_id)
@@ -65,9 +66,12 @@ async def upsert_user_footprint_ref(
         existing.zip_code = zip_code
         existing.last_kg_co2 = kg
         existing.updated_at = now
+        if display_name is not None:
+            existing.display_name = display_name
     else:
         ref = UserFootprintRef(
             user_id=uid,
+            display_name=display_name,
             zip_code=zip_code,
             last_kg_co2=kg,
             updated_at=now,
@@ -84,6 +88,35 @@ async def get_user_footprint_ref(
     stmt = select(UserFootprintRef).where(UserFootprintRef.user_id == str(user_id))
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
+
+
+async def get_leaderboard(
+    session: AsyncSession,
+    zip_code: str | None,
+    limit: int = 50,
+) -> list[dict]:
+    """Return users ranked by lowest CO2, optionally filtered by ZIP."""
+    stmt = select(
+        UserFootprintRef.user_id,
+        UserFootprintRef.display_name,
+        UserFootprintRef.last_kg_co2,
+        UserFootprintRef.zip_code,
+    ).order_by(UserFootprintRef.last_kg_co2.asc()).limit(limit)
+
+    if zip_code:
+        stmt = stmt.where(UserFootprintRef.zip_code == zip_code)
+
+    result = await session.execute(stmt)
+    rows = result.fetchall()
+    return [
+        {
+            "user_id": row[0],
+            "display_name": row[1] or "Anonymous",
+            "kg_co2_week": round(row[2], 2),
+            "zip_code": row[3],
+        }
+        for row in rows
+    ]
 
 
 async def join_challenge(

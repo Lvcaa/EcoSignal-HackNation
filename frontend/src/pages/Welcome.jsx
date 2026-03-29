@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom'
+import { useOnboardingStore } from '../store/onboarding'
 
 export default function Welcome() {
   const navigate = useNavigate()
+  const setMode = useOnboardingStore((s) => s.setMode)
 
   return (
     <div className="min-h-screen bg-surface max-w-md mx-auto flex flex-col relative overflow-hidden">
@@ -32,7 +34,7 @@ export default function Welcome() {
 
         {/* Let's Talk card */}
         <button
-          onClick={() => navigate('/onboarding/zip')}
+          onClick={() => { setMode('chat'); navigate('/onboarding/chat') }}
           className="w-full bg-surface-container-lowest rounded-3xl p-5 shadow-card border-2 border-primary-fixed/40 text-left mb-4 active:scale-95 transition-transform ease-out-expo"
         >
           <div className="flex items-start justify-between mb-3">
@@ -51,7 +53,7 @@ export default function Welcome() {
 
         {/* Quick Setup card */}
         <button
-          onClick={() => navigate('/onboarding/zip')}
+          onClick={() => { setMode('quick'); navigate('/onboarding/zip') }}
           className="w-full bg-surface-container-lowest rounded-3xl p-5 shadow-card border border-outline-variant/30 text-left mb-6 active:scale-95 transition-transform ease-out-expo"
         >
           <div className="w-10 h-10 bg-secondary-fixed/30 rounded-xl flex items-center justify-center mb-3">

@@ -6,7 +6,7 @@ from openai import OpenAI
 from pydantic_settings import BaseSettings
 
 REGOLO_BASE_URL = "https://api.regolo.ai/v1"
-REGOLO_MODEL = "mistral-small-4-119b"
+REGOLO_MODEL = "qwen3.5-122b"
 
 
 class Settings(BaseSettings):

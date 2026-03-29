@@ -13,6 +13,7 @@ from app.limiter import limiter
 from app.router import (
     actions_router,
     auth_router,
+    chat_router,
     community_router,
     env_router,
     footprint_router,
@@ -48,6 +49,7 @@ app.include_router(env_router, prefix=API_PREFIX)
 app.include_router(narrative_router, prefix=API_PREFIX)
 app.include_router(actions_router, prefix=API_PREFIX)
 app.include_router(community_router, prefix=API_PREFIX)
+app.include_router(chat_router, prefix=API_PREFIX)
 app.include_router(image_router, prefix=API_PREFIX)
 
 

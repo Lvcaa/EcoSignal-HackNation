@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -24,10 +25,41 @@ from app.schemas import (
     WeeklySurveyResponse,
 )
 
+logger = logging.getLogger(__name__)
+
 ROME_TZ = ZoneInfo("Europe/Rome")
 
+# ── Appliance energy consumption (kWh per cycle) ─────────
+# Based on EU Energy Label data (2019/2014, 2019/2022).
+
+WASHING_MACHINE_KWH: dict[str, float] = {
+    "cold": 1.2,
+    "warm": 2.4,
+    "hot": 4.0,
+    "very_hot": 6.0,
+}
+
+DISHWASHER_KWH: dict[str, float] = {
+    "eco": 1.6,
+    "normal": 2.8,
+    "intensive": 4.4,
+}
+
+# Italian grid emission factor (kg CO2e per kWh) — ISPRA 2023 fallback
+FALLBACK_GRID_FACTOR: float = 0.25
+
+# Mutable grid factor, updated from Climatiq at startup
+_grid_factor: float = FALLBACK_GRID_FACTOR
+
+
+def _appliance_co2(kwh_map: dict[str, float], mode: str) -> float:
+    """Compute kg CO2e for one cycle using current grid factor."""
+    return kwh_map[mode] * _grid_factor
+
+
 # ── Appliance CO2 factors (kg CO₂e per cycle) ────────────
-# Duplicated from footprint-engine to avoid cross-service imports.
+# Computed dynamically from kWh × grid_factor.
+# Fallback values match the original hardcoded ISPRA factors.
 
 WASHING_MACHINE_CO2: dict[str, float] = {
     "cold": 0.3,
@@ -41,6 +73,34 @@ DISHWASHER_CO2: dict[str, float] = {
     "normal": 0.7,
     "intensive": 1.1,
 }
+
+
+async def load_grid_factor(climatiq_client) -> None:
+    """Fetch Italian grid emission factor from Climatiq and recompute appliance CO2."""
+    global _grid_factor
+
+    if not climatiq_client.enabled:
+        logger.info("Climatiq disabled, using ISPRA 2023 grid factor (%.3f kg/kWh)", _grid_factor)
+        return
+
+    logger.info("Loading Italian grid factor from Climatiq...")
+    co2_per_kwh = await climatiq_client.estimate_electricity(
+        energy_kwh=1.0,
+        region="IT",
+        fallback=FALLBACK_GRID_FACTOR,
+    )
+    _grid_factor = co2_per_kwh
+
+    # Recompute appliance CO2 factors
+    for mode, kwh in WASHING_MACHINE_KWH.items():
+        WASHING_MACHINE_CO2[mode] = round(kwh * _grid_factor, 4)
+    for mode, kwh in DISHWASHER_KWH.items():
+        DISHWASHER_CO2[mode] = round(kwh * _grid_factor, 4)
+
+    logger.info(
+        "Grid factor updated to %.4f kg/kWh. Washing: %s, Dishwasher: %s",
+        _grid_factor, WASHING_MACHINE_CO2, DISHWASHER_CO2,
+    )
 
 EFFORT_COST: dict[EffortLevel, float] = {
     EffortLevel.easy: 1.0,
@@ -201,9 +261,17 @@ def build_weekly_summary(
         )
 
     total = sum(log.co2_delta_kg for log in logs)
+
+    # Collect unique dates that have at least one action
+    active_days = sorted({
+        log.created_at.astimezone(ROME_TZ).date().isoformat()
+        for log in logs
+    })
+
     return WeeklySummaryResponse(
         start_date=start_date.isoformat(),
         end_date=end_date.isoformat(),
         entries=entries,
         total_co2_delta_kg=round(total, 4),
+        active_days=active_days,
     )

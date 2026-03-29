@@ -16,6 +16,8 @@ from app.challenges import get_challenges
 from app.schemas import (
     ChallengeResponse,
     JoinChallengeRequest,
+    LeaderboardEntry,
+    LeaderboardResponse,
     NeighborhoodStats,
     SubmitFootprintRequest,
 )
@@ -55,7 +57,7 @@ async def submit_footprint(
     """Submit an anonymized footprint for a ZIP code."""
     week, year = _current_week_year()
     await repo.submit_footprint(session, body.zip_code, body.kg_co2_week, week, year)
-    await repo.upsert_user_footprint_ref(session, body.user_id, body.zip_code, body.kg_co2_week)
+    await repo.upsert_user_footprint_ref(session, body.user_id, body.zip_code, body.kg_co2_week, body.display_name)
     return {"status": "submitted"}
 
 
@@ -72,6 +74,27 @@ async def get_stats(
     user_ref = await repo.get_user_footprint_ref(session, user_id)
     user_kg = user_ref.last_kg_co2 if user_ref is not None else None
     return compute_neighborhood_stats(zip_code, city, footprints, user_kg)
+
+
+@router.get("/leaderboard", response_model=LeaderboardResponse)
+async def get_leaderboard(
+    session: SessionDep,
+    zip_code: str | None = Query(None),
+    limit: int = Query(default=50, ge=1, le=100),
+) -> LeaderboardResponse:
+    """Get the community leaderboard ranked by lowest CO2 impact."""
+    rows = await repo.get_leaderboard(session, zip_code, limit)
+    entries = [
+        LeaderboardEntry(
+            rank=i + 1,
+            user_id=r["user_id"],
+            display_name=r["display_name"],
+            kg_co2_week=r["kg_co2_week"],
+            zip_code=r["zip_code"],
+        )
+        for i, r in enumerate(rows)
+    ]
+    return LeaderboardResponse(entries=entries, total=len(entries))
 
 
 @router.get("/challenge", response_model=ChallengeResponse)

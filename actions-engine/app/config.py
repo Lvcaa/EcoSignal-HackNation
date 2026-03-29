@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
+    climatiq_api_key: str = ""
     database_url: str = "sqlite+aiosqlite:///./actions.db"
     catalogue_path: str = "catalogue.json"
     host: str = "0.0.0.0"

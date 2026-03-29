@@ -60,6 +60,8 @@ services:
       context: ./footprint-engine
       dockerfile: Dockerfile
     env_file: .env
+    environment:
+      CLIMATIQ_API_KEY: ${CLIMATIQ_API_KEY:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8002/health || exit 1"]
@@ -113,6 +115,8 @@ services:
       context: ./actions-engine
       dockerfile: Dockerfile
     env_file: .env
+    environment:
+      CLIMATIQ_API_KEY: ${CLIMATIQ_API_KEY:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8005/health || exit 1"]
@@ -167,6 +171,8 @@ services:
       context: ./image-analyzer
       dockerfile: Dockerfile
     env_file: .env
+    environment:
+      CLIMATIQ_API_KEY: ${CLIMATIQ_API_KEY:-}
     depends_on:
       redis:
         condition: service_healthy

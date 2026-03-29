@@ -10,9 +10,11 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.catalogue import load_catalogue
+from app.climatiq import ClimatiqClient
 from app.config import settings
 from app.models import Base
 from app.router import _get_session, router
+from app.service import load_grid_factor
 
 engine = create_async_engine(settings.database_url, echo=False)
 async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -35,6 +37,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     load_catalogue(settings.catalogue_path)
+    climatiq = ClimatiqClient(api_key=settings.climatiq_api_key)
+    await load_grid_factor(climatiq)
     app.dependency_overrides[_get_session] = get_session
     yield
     await engine.dispose()

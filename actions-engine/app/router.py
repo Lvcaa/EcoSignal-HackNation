@@ -167,6 +167,18 @@ async def get_daily_actions(
     return build_daily_response(logs, target_date)
 
 
+@router.get("/monthly", response_model=WeeklySummaryResponse)
+async def get_monthly_summary(
+    user_id: UserIdQuery,
+    repo: RepoDep,
+) -> WeeklySummaryResponse:
+    """Return aggregated action summary for the current month (Rome tz)."""
+    today_rome = datetime.now(tz=ROME_TZ).date()
+    start_of_month = today_rome.replace(day=1)
+    logs = await repo.get_actions_by_date_range(str(user_id), start_of_month, today_rome)
+    return build_weekly_summary(logs, start_of_month, today_rome)
+
+
 @router.get("/weekly", response_model=WeeklySummaryResponse)
 async def get_weekly_summary(
     user_id: UserIdQuery,

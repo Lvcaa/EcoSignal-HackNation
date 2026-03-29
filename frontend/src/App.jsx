@@ -9,6 +9,7 @@ import CommuteStep from './pages/onboarding/CommuteStep'
 import DietStep from './pages/onboarding/DietStep'
 import HomeStep from './pages/onboarding/HomeStep'
 import PetStep from './pages/onboarding/PetStep'
+import ChatOnboarding from './pages/onboarding/ChatOnboarding'
 import Dashboard from './pages/Dashboard'
 import ActionHub from './pages/ActionHub'
 import LogMeal from './pages/LogMeal'
@@ -22,6 +23,7 @@ import Profile from './pages/Profile'
 import BottomNav from './components/layout/BottomNav'
 import TopBar from './components/layout/TopBar'
 import OnboardingShell from './components/onboarding/OnboardingShell'
+import { useNotifications } from './hooks/useNotifications'
 
 function ProtectedRoute({ children }) {
   const token = useAuthStore((s) => s.token)
@@ -30,6 +32,7 @@ function ProtectedRoute({ children }) {
 }
 
 function AppLayout({ children }) {
+  useNotifications()
   return (
     <div className="min-h-screen bg-surface flex flex-col max-w-md mx-auto">
       <TopBar />
@@ -48,6 +51,7 @@ export default function App() {
       <Route path="/welcome" element={<Welcome />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/onboarding/chat" element={<ChatOnboarding />} />
       <Route path="/onboarding" element={<OnboardingShell />}>
         <Route path="zip" element={<ZipStep />} />
         <Route path="transport" element={<TransportStep />} />

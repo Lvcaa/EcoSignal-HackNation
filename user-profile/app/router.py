@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import service
@@ -85,6 +85,33 @@ async def refresh(
     repo: UserRepository = Depends(get_repository),
 ) -> TokenResponse:
     return await service.refresh_token(repo, token_payload)
+
+
+@auth_router.get("/users")
+async def list_users(
+    _token: TokenPayload = Depends(verify_token),
+    limit: int = Query(default=50, ge=1, le=200),
+    repo: UserRepository = Depends(get_repository),
+) -> list[dict]:
+    """List all users (demo/pitch only)."""
+    users = await repo.list_users(limit)
+    return [
+        {"user_id": str(u.id), "display_name": u.display_name, "email": u.email, "zip_code": u.zip_code}
+        for u in users
+    ]
+
+
+@auth_router.post("/impersonate/{user_id}", response_model=TokenResponse)
+async def impersonate(
+    user_id: UUID,
+    _token: TokenPayload = Depends(verify_token),
+    repo: UserRepository = Depends(get_repository),
+) -> TokenResponse:
+    """Issue a token for any user by ID (demo/pitch only)."""
+    try:
+        return await service.impersonate_user(repo, user_id)
+    except UserNotFoundError:
+        raise HTTPException(status_code=404, detail="User not found")
 
 
 # ── Profile Router ────────────────────────────────────────────

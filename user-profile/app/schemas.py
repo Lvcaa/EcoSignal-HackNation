@@ -54,6 +54,8 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    user_id: str | None = None
+    display_name: str | None = None
 
 
 class TokenPayload(BaseModel):
@@ -66,6 +68,9 @@ class TokenPayload(BaseModel):
 
 class ProfileUpdateRequest(BaseModel):
     zip_code: str | None = Field(None, pattern=r"^\d{5}$")
+    address: str | None = Field(None, max_length=300)
+    latitude: float | None = Field(None, ge=-90, le=90)
+    longitude: float | None = Field(None, ge=-180, le=180)
     transport_mode: TransportMode | None = None
     diet_type: DietType | None = None
     home_type: HomeType | None = None
@@ -81,6 +86,9 @@ class ProfileUpdateRequest(BaseModel):
             v is None
             for v in [
                 self.zip_code,
+                self.address,
+                self.latitude,
+                self.longitude,
                 self.transport_mode,
                 self.diet_type,
                 self.home_type,
@@ -103,6 +111,9 @@ class UserProfileResponse(BaseModel):
     email: str
     display_name: str
     zip_code: str | None = None
+    address: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     transport_mode: TransportMode | None = None
     diet_type: DietType | None = None
     home_type: HomeType | None = None

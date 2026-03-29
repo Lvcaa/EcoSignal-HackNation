@@ -64,6 +64,7 @@ class UserFootprintRef(Base):
     __tablename__ = "user_footprint_refs"
 
     user_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    display_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     zip_code: Mapped[str] = mapped_column(String(5), nullable=False)
     last_kg_co2: Mapped[float] = mapped_column(Float, nullable=False)
     updated_at: Mapped[datetime | None] = mapped_column(

@@ -174,3 +174,4 @@ class WeeklySummaryResponse(BaseModel):
     end_date: str
     entries: list[WeeklySummaryEntry]
     total_co2_delta_kg: float
+    active_days: list[str] = Field(default_factory=list, description="ISO dates with at least one logged action")

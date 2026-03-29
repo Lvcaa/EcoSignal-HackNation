@@ -5,13 +5,10 @@
 from app.enums import TransportMode
 from app.factors import (
     ASSUMED_WEEKLY_KM,
-    EMISSION_FACTOR_BIKE_KM,
-    EMISSION_FACTOR_CAR_KM,
     EMISSION_FACTOR_DIET,
     EMISSION_FACTOR_HOME,
     EMISSION_FACTOR_PET_WEEKLY,
-    EMISSION_FACTOR_TRANSIT_KM,
-    EMISSION_FACTOR_WALK_KM,
+    FACTORS,
     LABEL_THRESHOLD_AVERAGE,
     LABEL_THRESHOLD_HIGH,
     LABEL_THRESHOLD_LOW,
@@ -19,16 +16,20 @@ from app.factors import (
 )
 from app.schemas import CategoryBreakdown, FootprintRequest, FootprintResult
 
-_TRANSPORT_FACTOR: dict[TransportMode, float] = {
-    TransportMode.car: EMISSION_FACTOR_CAR_KM,
-    TransportMode.transit: EMISSION_FACTOR_TRANSIT_KM,
-    TransportMode.bike: EMISSION_FACTOR_BIKE_KM,
-    TransportMode.walk: EMISSION_FACTOR_WALK_KM,
-}
+
+def _transport_factor(mode: TransportMode) -> float:
+    """Get transport emission factor from the mutable FACTORS dict."""
+    factor_map = {
+        TransportMode.car: "car_km",
+        TransportMode.transit: "transit_km",
+        TransportMode.bike: "bike_km",
+        TransportMode.walk: "walk_km",
+    }
+    return FACTORS.get(factor_map.get(mode, "walk_km"), 0.0)
 
 
 def calculate_footprint(request: FootprintRequest) -> FootprintResult:
-    """Calculate weekly CO₂ footprint from user habits."""
+    """Calculate weekly CO2 footprint from user habits."""
     # 1. Validate week_start is Monday
     if request.week_start.weekday() != 0:
         raise ValueError("week_start must be a Monday")
@@ -38,9 +39,9 @@ def calculate_footprint(request: FootprintRequest) -> FootprintResult:
     commute_scale = request.commute_days_per_week / 5.0
     km = km * commute_scale
     if request.transport_mode == TransportMode.mixed:
-        factor = 0.5 * EMISSION_FACTOR_CAR_KM + 0.5 * EMISSION_FACTOR_TRANSIT_KM
+        factor = 0.5 * FACTORS["car_km"] + 0.5 * FACTORS["transit_km"]
     else:
-        factor = _TRANSPORT_FACTOR[request.transport_mode]
+        factor = _transport_factor(request.transport_mode)
     transport_kg = round(km * factor, 2)
 
     # 3. Food

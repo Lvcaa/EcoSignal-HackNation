@@ -13,11 +13,13 @@ export default function LogMeal() {
   const [description, setDescription] = useState('')
   const [analysis, setAnalysis] = useState(null)
   const [error, setError] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
 
   const handlePhoto = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    setImagePreview(URL.createObjectURL(file))
     setStep(STEPS.ANALYZING)
     setError(null)
 
@@ -136,6 +138,11 @@ export default function LogMeal() {
 
       {step === STEPS.RESULT && analysis && (
         <div className="mt-6 space-y-4">
+          {imagePreview && (
+            <div className="rounded-2xl overflow-hidden shadow-card">
+              <img src={imagePreview} alt="Foto del pasto" className="w-full h-48 object-cover" />
+            </div>
+          )}
           <div className="bg-surface-container-lowest rounded-2xl shadow-card p-5 text-center">
             <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-on-surface/40 mb-2">Impatto stimato</p>
             <p className="text-4xl font-black text-on-surface">

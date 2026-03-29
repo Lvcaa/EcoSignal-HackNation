@@ -3,6 +3,9 @@ import client from './client'
 export const getActions = () =>
   client.get('/actions')
 
+export const getStreak = () =>
+  client.get('/actions/streak')
+
 export const completeAction = (actionId) =>
   client.post(`/actions/${actionId}/complete`)
 
@@ -14,6 +17,9 @@ export const getDailyActions = (date) =>
 
 export const getWeeklySummary = () =>
   client.get('/actions/weekly')
+
+export const getMonthlySummary = () =>
+  client.get('/actions/monthly')
 
 export const submitWeeklySurvey = (data) =>
   client.post('/actions/weekly-survey', data)

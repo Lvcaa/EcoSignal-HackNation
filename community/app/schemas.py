@@ -11,6 +11,7 @@ class SubmitFootprintRequest(BaseModel):
     user_id: UUID
     zip_code: str
     kg_co2_week: float
+    display_name: str | None = None
 
 
 class JoinChallengeRequest(BaseModel):
@@ -38,6 +39,19 @@ class ChallengeResponse(BaseModel):
     progress_pct: float
     user_joined: bool
     week_number: int
+
+
+class LeaderboardEntry(BaseModel):
+    rank: int
+    user_id: str
+    display_name: str
+    kg_co2_week: float
+    zip_code: str
+
+
+class LeaderboardResponse(BaseModel):
+    entries: list[LeaderboardEntry]
+    total: int
 
 
 class ErrorResponse(BaseModel):

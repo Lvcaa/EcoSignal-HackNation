@@ -3,19 +3,28 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { submitOnboarding } from '../../api/profile'
 import { calculateFootprint } from '../../api/footprint'
+import { useAuthStore } from '../../store/auth'
+import { useOnboardingStore } from '../../store/onboarding'
 
 export default function OnboardingShell() {
   const navigate = useNavigate()
+  const setZip = useAuthStore((s) => s.setZip)
+  const setLocation = useAuthStore((s) => s.setLocation)
+  const persistedData = useOnboardingStore((s) => s.data)
+  const clearOnboarding = useOnboardingStore((s) => s.clear)
   const [data, setData] = useState({
-    zip_code: '',
-    transport_mode: 'transit',
-    commute_days_per_week: undefined,
-    diet_type: 'meat_weekly',
-    home_type: '',
-    home_size_sqm: 70,
-    has_pets: undefined,
-    pet_type: null,
-    pet_count: 0,
+    zip_code: persistedData.zip_code || '',
+    address: persistedData.address || '',
+    latitude: persistedData.latitude,
+    longitude: persistedData.longitude,
+    transport_mode: persistedData.transport_mode || 'transit',
+    commute_days_per_week: persistedData.commute_days_per_week,
+    diet_type: persistedData.diet_type || 'meat_weekly',
+    home_type: persistedData.home_type || '',
+    home_size_sqm: persistedData.home_size_sqm || 70,
+    has_pets: persistedData.has_pets,
+    pet_type: persistedData.pet_type,
+    pet_count: persistedData.pet_count || 0,
   })
 
   const mutation = useMutation({
@@ -24,14 +33,26 @@ export default function OnboardingShell() {
       const { data: footprint } = await calculateFootprint()
       return footprint
     },
-    onSuccess: () => navigate('/home'),
+    onSuccess: () => {
+      setZip(data.zip_code)
+      if (data.address) setLocation(data.address, data.latitude, data.longitude)
+      clearOnboarding()
+      navigate('/home')
+    },
   })
 
-  const updateData = (partial) => setData((prev) => ({ ...prev, ...partial }))
+  const updateOnboarding = useOnboardingStore((s) => s.updateData)
+  const updateData = (partial) => {
+    setData((prev) => ({ ...prev, ...partial }))
+    updateOnboarding(partial)
+  }
 
   const handleFinish = () => {
     mutation.mutate({
       zip_code: data.zip_code,
+      address: data.address || null,
+      latitude: data.latitude,
+      longitude: data.longitude,
       transport_mode: data.transport_mode,
       commute_days_per_week: data.commute_days_per_week ?? 5,
       diet_type: data.diet_type,

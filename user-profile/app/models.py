@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Integer, String, func
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, registry
 
 mapper_registry = registry()
@@ -28,6 +28,9 @@ class User(Base):
     display_name: Mapped[str] = mapped_column(String(100), nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(128), nullable=False)
     zip_code: Mapped[str | None] = mapped_column(String(5), nullable=True)
+    address: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
     transport_mode: Mapped[str | None] = mapped_column(String(20), nullable=True)
     diet_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
     home_type: Mapped[str | None] = mapped_column(String(20), nullable=True)

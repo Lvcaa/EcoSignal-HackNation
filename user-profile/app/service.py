@@ -50,6 +50,20 @@ async def refresh_token(
     return TokenResponse(access_token=token)
 
 
+async def impersonate_user(
+    repo: UserRepository,
+    user_id: UUID,
+) -> TokenResponse:
+    """Issue a token for any user by ID (demo/pitch only)."""
+    user = await repo.get_by_id(user_id)
+    token = create_access_token({"sub": str(user.id)})
+    return TokenResponse(
+        access_token=token,
+        user_id=str(user.id),
+        display_name=user.display_name,
+    )
+
+
 async def get_profile(
     repo: UserRepository,
     user_id: UUID,
