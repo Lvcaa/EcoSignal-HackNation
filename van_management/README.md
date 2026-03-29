@@ -13,11 +13,6 @@ van_management/
   app/
     api/v1/trucks.py      # Route handlers
     api/v1/signals.py     # Signal and attachment route handlers
-    api/v1/carbon.py      # Deterministic carbon route handlers
-    carbon/
-      mappings.py         # Pinned deterministic activity catalog
-      climatiq_client.py  # Climatiq API client
-      calculators.py      # Local math helpers (e.g. Haversine)
     core/
       config.py            # Settings from env vars
       database.py          # SQLAlchemy engine & session
@@ -27,7 +22,6 @@ van_management/
     schemas/
       truck.py             # Pydantic request/response schemas
       signal.py            # Signal request/response schemas
-      carbon.py            # Carbon request/response schemas
       common.py            # Shared response envelope
     repositories/
       truck_repository.py  # DB access layer
@@ -35,14 +29,12 @@ van_management/
     services/
       truck_service.py     # Business logic
       signal_service.py    # Signal business logic and file handling
-      carbon_service.py    # Carbon orchestration and truck-derived evaluation
     main.py                # FastAPI app entrypoint
   tests/
     conftest.py            # Fixtures (SQLite in-memory)
     test_health.py
     test_trucks.py
     test_signals.py
-    test_carbon.py
   alembic/                 # Database migrations
   scripts/run_dev.sh       # Dev runner
   Dockerfile
@@ -117,10 +109,6 @@ uvicorn app.main:app --reload --port 8000
 | `DEBUG`        | `false`                                              | Debug mode               |
 | `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/ecosignal` | PostgreSQL connection |
 | `UPLOAD_DIR`   | `/app/uploads`                                       | Signal attachment storage |
-| `CLIMATIQ_API_KEY` | unset | Required for provider-backed carbon evaluation |
-| `CLIMATIQ_BASE_URL` | `https://api.climatiq.io` | Climatiq API base URL |
-| `CLIMATIQ_TIMEOUT_SECONDS` | `10.0` | Timeout used for Climatiq requests |
-| `CLIMATIQ_DATA_VERSION` | `32` | Pinned Climatiq data version used by carbon endpoints |
 
 ---
 
@@ -345,49 +333,6 @@ curl "https://dayana-nonfulminating-novella.ngrok-free.dev/api/v1/trucks/TRUCK_0
   "detail": "No history found for truck 'UNKNOWN'"
 }
 ```
-
-### Carbon endpoints
-
-The backend now exposes deterministic carbon calculations under `/api/v1/carbon`.
-
-Key routes:
-
-- `POST /api/v1/carbon/evaluate`
-- `POST /api/v1/carbon/evaluate/batch`
-- `POST /api/v1/carbon/personal/evaluate`
-- `GET /api/v1/carbon/factors`
-- `GET /api/v1/carbon/trucks/{truck_id}/latest`
-- `GET /api/v1/carbon/trucks/{truck_id}/history`
-
-Example direct evaluation:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/carbon/evaluate \
-  -H "Content-Type: application/json" \
-  -d '{
-    "activity_type": "household_electricity",
-    "quantity": 5,
-    "unit": "kWh"
-  }'
-```
-
-Example daily personal footprint:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/carbon/personal/evaluate \
-  -H "Content-Type: application/json" \
-  -d '{
-    "person_id": "USER_001",
-    "date": "2026-03-28",
-    "transport": [{"mode": "car_petrol", "distance_km": 20, "occupancy": 2}],
-    "food": [{"food_category": "beef", "quantity": 0.25, "unit": "kg"}],
-    "utilities": [{"activity_type": "household_electricity", "quantity": 5, "unit": "kWh"}],
-    "waste": [{"waste_type": "plastic", "treatment": "recycled", "quantity": 1, "unit": "kg"}]
-  }'
-```
-
-`GET /api/v1/carbon/factors` exposes the pinned activity catalog, Climatiq selectors,
-assumptions, and the configured data version used by the module.
 
 ---
 

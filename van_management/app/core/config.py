@@ -8,10 +8,7 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/ecosignal"
     UPLOAD_DIR: str = "/app/uploads"
-    CLIMATIQ_API_KEY: str | None = None
-    CLIMATIQ_BASE_URL: str = "https://api.climatiq.io"
-    CLIMATIQ_TIMEOUT_SECONDS: float = 10.0
-    CLIMATIQ_DATA_VERSION: str = "32"
+    UNSPLASH_ACCESS_KEY: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

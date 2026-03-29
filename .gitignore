@@ -1,7 +1,7 @@
-.claude/
-.venv/
-venv/
+.DS_Store
+.env
 __pycache__/
-*.py[cod]
-.pytest_cache/
-van_management/.env
+*.pyc
+.venv/
+node_modules/
+dist/

@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.core.database import Base
 
 # Import all models so Base.metadata is populated
+from app.models.report import Report  # noqa: F401
 from app.models.signal import Signal, SignalAttachment  # noqa: F401
 from app.models.truck_state import TruckStateVersion  # noqa: F401
 

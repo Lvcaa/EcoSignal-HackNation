@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from app.api.v1.carbon import router as carbon_router
+from app.api.v1.reports import router as reports_router
 from app.api.v1.signals import router as signals_router
 from app.api.v1.trucks import router as trucks_router
 from app.core.config import settings
@@ -30,7 +30,7 @@ app.add_middleware(
 
 app.include_router(trucks_router)
 app.include_router(signals_router)
-app.include_router(carbon_router)
+app.include_router(reports_router)
 
 
 @app.exception_handler(IntegrityError)
