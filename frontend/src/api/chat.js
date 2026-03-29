@@ -7,4 +7,4 @@ const chatClient = axios.create({
 })
 
 export const chatOnboarding = (messages, extracted_data = {}) =>
-  chatClient.post('/chat/onboarding', { messages, extracted_data })
+  chatClient.post('/chat/onboarding', { messages, extracted_data }, { timeout: 60_000 })

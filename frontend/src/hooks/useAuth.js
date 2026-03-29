@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/auth'
 import { useNotificationStore } from '../store/notifications'
 import { useOnboardingStore } from '../store/onboarding'
 import * as authApi from '../api/auth'
-import { submitOnboarding } from '../api/profile'
+import { getProfile, submitOnboarding } from '../api/profile'
 import { calculateFootprint } from '../api/footprint'
 
 export function useLogin() {
@@ -13,9 +13,21 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: ({ email, password }) => authApi.login(email, password),
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       const { access_token, user_id, display_name } = res.data
       setAuth(access_token, user_id, display_name)
+
+      // Restore location data from profile so AddressFixDialog doesn't re-appear
+      try {
+        const profile = (await getProfile()).data
+        if (profile.zip_code) useAuthStore.getState().setZip(profile.zip_code)
+        if (profile.latitude && profile.longitude) {
+          useAuthStore.getState().setLocation(profile.address, profile.latitude, profile.longitude)
+        }
+      } catch {
+        // Profile fetch failed — dialog will show if needed
+      }
+
       navigate('/home')
     },
   })

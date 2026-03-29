@@ -27,19 +27,19 @@ export default function ChatOnboarding() {
   const scrollRef = useRef(null)
   const inputRef = useRef(null)
   const [loading, setLoading] = useState(false)
+  const [initError, setInitError] = useState(false)
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [chatMessages])
 
-  // Start conversation on mount — clear previous chat and begin fresh
-  useEffect(() => {
-    let cancelled = false
+  // Start conversation — clear previous chat and begin fresh
+  const startConversation = () => {
     setChatMessages([])
     setLoading(true)
+    setInitError(false)
     chatOnboarding([]).then(({ data: result }) => {
-      if (cancelled) return
       setChatMessages([{ role: 'assistant', content: result.message }])
       if (result.extracted_data) {
         const cleaned = {}
@@ -50,11 +50,13 @@ export default function ChatOnboarding() {
       }
       setLoading(false)
     }).catch(() => {
-      if (!cancelled) setLoading(false)
+      setLoading(false)
+      setInitError(true)
     })
-    return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { startConversation() }, [])
 
   // Send message to Regolo
   const chatMutation = useMutation({
@@ -188,6 +190,19 @@ export default function ChatOnboarding() {
                 <span className="w-1.5 h-1.5 bg-on-surface/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </span>
             </div>
+          </div>
+        )}
+
+        {initError && (
+          <div className="flex flex-col items-center gap-3 py-8">
+            <span className="material-symbols-outlined text-3xl text-on-surface/30">cloud_off</span>
+            <p className="text-sm text-on-surface/50">Non riesco a connettermi. Riprova.</p>
+            <button
+              onClick={startConversation}
+              className="px-5 py-2 bg-primary text-on-primary text-sm font-bold rounded-full active:scale-95 transition-transform"
+            >
+              Riprova
+            </button>
           </div>
         )}
 
