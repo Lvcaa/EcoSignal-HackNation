@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-fixed": "#b0f1c7",
+              "secondary": "#b3cdb9",
+              "on-primary": "#003920",
+              "tertiary-fixed": "#ffdadb",
+              "surface-dim": "#131315",
+              "secondary-fixed": "#cfe9d5",
+              "tertiary-fixed-dim": "#ffb2b8",
+              "surface-container-low": "#1b1b1d",
+              "on-background": "#e4e2e4",
+              "primary-fixed-dim": "#95d4ac",
+              "on-error": "#690005",
+              "on-error-container": "#ffdad6",
+              "tertiary": "#ffb2b8",
+              "on-surface": "#e4e2e4",
+              "on-tertiary-container": "#4d171f",
+              "on-tertiary-fixed-variant": "#71343b",
+              "on-primary-container": "#00311b",
+              "tertiary-container": "#c87b82",
+              "on-secondary-container": "#a2bba8",
+              "error": "#ffb4ab",
+              "surface-tint": "#95d4ac",
+              "inverse-primary": "#2c6a48",
+              "surface-variant": "#353437",
+              "background": "#131315",
+              "on-secondary": "#1f3527",
+              "error-container": "#93000a",
+              "surface-container-highest": "#353437",
+              "on-tertiary": "#551e26",
+              "on-primary-fixed-variant": "#0f5132",
+              "secondary-fixed-dim": "#b3cdb9",
+              "on-secondary-fixed-variant": "#354c3d",
+              "on-surface-variant": "#c0c9c0",
+              "surface-container-lowest": "#0e0e10",
+              "surface": "#131315",
+              "surface-container": "#1f1f21",
+              "inverse-on-surface": "#303032",
+              "on-secondary-fixed": "#092013",
+              "on-primary-fixed": "#002111",
+              "outline": "#8a938b",
+              "outline-variant": "#404942",
+              "surface-container-high": "#2a2a2c",
+              "on-tertiary-fixed": "#3a0912",
+              "primary-container": "#609d78",
+              "primary": "#95d4ac",
+              "secondary-container": "#354c3d",
+              "surface-bright": "#39393b",
+              "inverse-surface": "#e4e2e4"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bg-glass {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .ios-progress-glow {
+            box-shadow: 0 0 12px rgba(149, 212, 172, 0.3);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body antialiased min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#131315]/70 backdrop-blur-xl border-b border-[#404942]/15 flex items-center justify-between px-6 h-16 w-full">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#95d4ac]" data-icon="delete_sweep">delete_sweep</span>
+<span class="text-lg font-bold tracking-widest text-[#95d4ac] font-headline">WasteTrack</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#e4e2e4]/60 hover:opacity-80 transition-opacity cursor-pointer" data-icon="settings">settings</span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant/20 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close up portrait of a smiling young man with clean lighting and a minimalist dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDq3st4UFnkbDa0ziXXa-jfgC9DCunmevKznQjB1j_WCRayVLMmfw3iAVfo63_DPQlPyN8EjjWxk7QZz295VgzBJrd8BMnrBPbsujpOAIESIvN7SqTOpBOF91CVDAu8-ELUuyHxwVxFDWbteno33Gzwl7rD67EjolGF8ue7OO8tF6DnM8vvTJMG5e2j8yPez22Tu_mN9mLLEOYB__Uql_yTNgh5tBfO5xPGOHp8gnnzXGkI7deIi6-joxFxS-00m8jFHAqNieFE81Be"/>
+</div>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-2xl mx-auto space-y-10">
+<!-- Profile Hero Section -->
+<section class="flex flex-col items-center text-center space-y-4">
+<div class="relative group">
+<div class="absolute inset-0 bg-primary/20 rounded-full blur-2xl group-hover:bg-primary/30 transition-all duration-500"></div>
+<div class="relative w-28 h-28 rounded-full p-1 bg-gradient-to-tr from-primary to-primary-container">
+<div class="w-full h-full rounded-full border-4 border-surface overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Professional headshot of a user against a dark matte studio background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDs3PMZYC22nsj7SAn9G4YEvMcGhG3J7tmQlZX4_TkdAWnP3QDDJzxc2oyI7nFAXq6mB4EeTeWTdCwV3fjP_NA1oKT9ghIm6w5IyhLSoC31XFzIoNCc9QXXr9x6w9jSY0_ow3bvZmVRZl7pSfgEE28byOI0SmWXKEJP-IMyqE7hDH6wmhtbzx_yvPd_IaOLaam8zdMhA5Zv-zomGlUsjkxG_tOiP_O_wlGq1_vNtAWHnNAm4FGjbOHC_sLOf8958_SGxI_Psm-6vmMC"/>
+</div>
+</div>
+<div class="absolute -bottom-1 -right-1 bg-primary text-on-primary w-8 h-8 rounded-full flex items-center justify-center border-4 border-surface shadow-lg">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+</div>
+<div class="space-y-1">
+<h1 class="font-headline font-extrabold text-3xl tracking-tight text-on-surface">Alex Rivera</h1>
+<p class="text-on-surface/60 font-medium tracking-wide">Urban Guardian • Level 24</p>
+</div>
+<!-- XP Progress Bar (iOS Style) -->
+<div class="w-full max-w-xs pt-4 space-y-2">
+<div class="flex justify-between text-[11px] font-bold tracking-widest text-on-surface/40 uppercase">
+<span>Progress</span>
+<span>1,420 / 2,000 XP</span>
+</div>
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-primary-container rounded-full ios-progress-glow" style="width: 71%"></div>
+</div>
+</div>
+</section>
+<!-- Stats Bento Grid -->
+<section class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-5 rounded-xl border border-outline-variant/10 flex flex-col justify-between h-32">
+<span class="material-symbols-outlined text-primary/80" data-icon="star" style="font-variation-settings: 'FILL' 1;">star</span>
+<div>
+<div class="text-2xl font-headline font-bold text-on-surface">12,450</div>
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface/40">Total Points</div>
+</div>
+</div>
+<div class="bg-surface-container-low p-5 rounded-xl border border-outline-variant/10 flex flex-col justify-between h-32">
+<span class="material-symbols-outlined text-primary/80" data-icon="eco" style="font-variation-settings: 'FILL' 1;">eco</span>
+<div>
+<div class="text-2xl font-headline font-bold text-on-surface">84</div>
+<div class="text-[10px] font-bold uppercase tracking-widest text-on-surface/40">Kg Diverted</div>
+</div>
+</div>
+</section>
+<!-- Achievement Badges -->
+<section class="space-y-4">
+<div class="flex justify-between items-center px-1">
+<h2 class="font-headline font-bold text-lg tracking-tight">Achievements</h2>
+<button class="text-primary text-xs font-bold uppercase tracking-widest hover:opacity-70 transition-opacity">View All</button>
+</div>
+<div class="grid grid-cols-4 gap-4">
+<div class="flex flex-col items-center space-y-2">
+<div class="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center text-primary border border-outline-variant/20 shadow-sm">
+<span class="material-symbols-outlined text-2xl" data-icon="military_tech" style="font-variation-settings: 'FILL' 1;">military_tech</span>
+</div>
+<span class="text-[9px] font-bold text-on-surface/50 text-center leading-tight">EARLY ADOPTER</span>
+</div>
+<div class="flex flex-col items-center space-y-2">
+<div class="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center text-primary border border-outline-variant/20 shadow-sm">
+<span class="material-symbols-outlined text-2xl" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<span class="text-[9px] font-bold text-on-surface/50 text-center leading-tight">STREAK MASTER</span>
+</div>
+<div class="flex flex-col items-center space-y-2">
+<div class="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center text-primary border border-outline-variant/20 shadow-sm">
+<span class="material-symbols-outlined text-2xl" data-icon="volunteer_activism" style="font-variation-settings: 'FILL' 1;">volunteer_activism</span>
+</div>
+<span class="text-[9px] font-bold text-on-surface/50 text-center leading-tight">CIVIC HERO</span>
+</div>
+<div class="flex flex-col items-center space-y-2 opacity-30 grayscale">
+<div class="w-14 h-14 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface border border-outline-variant/20">
+<span class="material-symbols-outlined text-2xl" data-icon="lock">lock</span>
+</div>
+<span class="text-[9px] font-bold text-on-surface/50 text-center leading-tight">TOP PERCENT</span>
+</div>
+</div>
+</section>
+<!-- Report History (Inset Group List) -->
+<section class="space-y-4">
+<h2 class="font-headline font-bold text-lg tracking-tight px-1">Recent Activity</h2>
+<div class="bg-surface-container-low rounded-2xl overflow-hidden border border-outline-variant/10">
+<!-- Item 1 -->
+<div class="p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors cursor-pointer border-b border-outline-variant/5">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="report">report</span>
+</div>
+<div class="flex-1">
+<div class="text-sm font-semibold text-on-surface">Illegal Dumping reported</div>
+<div class="text-[11px] text-on-surface/50">24th Ave • Completed</div>
+</div>
+<div class="text-xs font-bold text-primary">+50 XP</div>
+</div>
+<!-- Item 2 -->
+<div class="p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors cursor-pointer border-b border-outline-variant/5">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="recycling">recycling</span>
+</div>
+<div class="flex-1">
+<div class="text-sm font-semibold text-on-surface">Community Cleanup</div>
+<div class="text-[11px] text-on-surface/50">Green Park • Yesterday</div>
+</div>
+<div class="text-xs font-bold text-primary">+200 XP</div>
+</div>
+<!-- Item 3 -->
+<div class="p-4 flex items-center gap-4 hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+</div>
+<div class="flex-1">
+<div class="text-sm font-semibold text-on-surface">Bin Overflow report</div>
+<div class="text-[11px] text-on-surface/50">Central St • 3 days ago</div>
+</div>
+<div class="text-xs font-bold text-primary">+30 XP</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 px-4 bg-[#131315]/80 backdrop-blur-2xl border-t border-[#404942]/10 rounded-t-2xl pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.4)]">
+<a class="flex flex-col items-center justify-center text-[#e4e2e4]/50 hover:text-[#95d4ac]/80 transition-all duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="map">map</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide">Map</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#e4e2e4]/50 hover:text-[#95d4ac]/80 transition-all duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="analytics">analytics</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#e4e2e4]/50 hover:text-[#95d4ac]/80 transition-all duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="leaderboard">leaderboard</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide">Leaderboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#95d4ac] scale-110 active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="person" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-wide">Profile</span>
+</a>
+</nav>
+</body></html>
